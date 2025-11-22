@@ -1,8 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GroundingChunk, AnalysisResult } from '../types';
 
-// Initialize the Google GenAI client
-// The API key must be provided via the environment variable API_KEY
+// Initialization following Google GenAI SDK strict guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const fileToGenerativePart = async (file: File) => {
