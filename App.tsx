@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzeCrop } from './services/geminiService';
 import { AnalysisResult, UserProfile as UserProfileType } from './types';
@@ -15,7 +14,38 @@ import Footer from './components/Footer';
 
 const FREE_PROMPT_LIMIT = 3;
 
-// Helper component defined outside the main component to avoid re-renders
+// --- Parsers ---
+
+const parseAnalysis = (markdown: string) => {
+    const sections = {
+        diagnosis: '',
+        symptoms: '',
+        treatment: '',
+        prevention: '',
+        raw: ''
+    };
+
+    // Simple regex based parsing matching the specific prompt structure
+    const diagnosisMatch = markdown.match(/## 🔍 Diagnóstico\s*([\s\S]*?)(?=##|$)/);
+    const symptomsMatch = markdown.match(/## 📝 Sintomas Identificados\s*([\s\S]*?)(?=##|$)/);
+    const treatmentMatch = markdown.match(/## 💊 Tratamento Recomendado\s*([\s\S]*?)(?=##|$)/);
+    const preventionMatch = markdown.match(/## 🛡️ Medidas Preventivas\s*([\s\S]*?)(?=##|$)/);
+
+    if (diagnosisMatch) sections.diagnosis = diagnosisMatch[1].trim();
+    if (symptomsMatch) sections.symptoms = symptomsMatch[1].trim();
+    if (treatmentMatch) sections.treatment = treatmentMatch[1].trim();
+    if (preventionMatch) sections.prevention = preventionMatch[1].trim();
+
+    // Fallback if the structure isn't perfect
+    if (!sections.diagnosis && !sections.symptoms) {
+         sections.raw = markdown;
+    }
+
+    return sections;
+};
+
+// --- Helper Components ---
+
 const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: boolean, onOpenTutorial: () => void }> = ({ onImageSelect, disabled, onOpenTutorial }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -122,25 +152,113 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
     );
 };
 
-// Helper component for displaying results
 const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
+    const parsed = parseAnalysis(result.diagnosis);
+
+    // Fallback for unstructured data
+    if (parsed.raw) {
+         return (
+            <div className="mt-8 w-full max-w-4xl mx-auto animate-fade-in-up">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+                     <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed">{parsed.raw}</pre>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="mt-8 w-full max-w-4xl mx-auto space-y-8 animate-fade-in-up delay-100">
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
-                <div className="prose prose-emerald dark:prose-invert max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:text-emerald-700 dark:prose-h2:text-emerald-400 prose-h3:text-lg prose-p:leading-relaxed prose-li:marker:text-emerald-500" dangerouslySetInnerHTML={{ __html: result.diagnosis }} />
+        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6 pb-12">
+            {/* Diagnosis Section - Green/Emphasis */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-l-8 border-emerald-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '0ms'}}>
+                <div className="p-8">
+                    <h3 className="flex items-center text-2xl font-bold text-emerald-800 dark:text-emerald-400 mb-4">
+                        <span className="text-3xl mr-3">🔍</span> Diagnóstico
+                    </h3>
+                    <div className="text-gray-800 dark:text-gray-100 text-xl font-medium leading-relaxed">
+                        {parsed.diagnosis}
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl p-8 border border-emerald-100 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg mr-3">
-                        <MapPinIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="grid md:grid-cols-2 gap-6">
+                {/* Symptoms Section - Amber/Warning */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-t-4 border-amber-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '150ms'}}>
+                    <div className="p-6 h-full">
+                        <h3 className="flex items-center text-xl font-bold text-amber-600 dark:text-amber-400 mb-5 pb-2 border-b border-amber-100 dark:border-gray-700">
+                            <span className="text-2xl mr-3">📝</span> Sintomas
+                        </h3>
+                        <ul className="space-y-3">
+                            {parsed.symptoms.split('\n').map((line, i) => {
+                                const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                                if (!cleanLine) return null;
+                                return (
+                                    <li key={i} className="flex items-start text-gray-700 dark:text-gray-300">
+                                        <span className="mr-3 mt-1.5 w-2 h-2 bg-amber-400 rounded-full flex-shrink-0 shadow-sm"></span>
+                                        <span className="leading-relaxed">{cleanLine}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     </div>
-                    Lojas Agropecuárias Próximas
+                </div>
+
+                {/* Prevention Section - Purple/Info */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-t-4 border-purple-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '300ms'}}>
+                    <div className="p-6 h-full">
+                         <h3 className="flex items-center text-xl font-bold text-purple-600 dark:text-purple-400 mb-5 pb-2 border-b border-purple-100 dark:border-gray-700">
+                            <span className="text-2xl mr-3">🛡️</span> Prevenção
+                        </h3>
+                         <ul className="space-y-3">
+                            {parsed.prevention.split('\n').map((line, i) => {
+                                const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                                if (!cleanLine) return null;
+                                return (
+                                    <li key={i} className="flex items-start text-gray-700 dark:text-gray-300">
+                                        <div className="mr-3 mt-1 text-purple-500 bg-purple-50 dark:bg-purple-900/30 rounded-full p-0.5">
+                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                        <span className="leading-relaxed">{cleanLine}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+             {/* Treatment Section - Blue/Medical - Full Width */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-l-8 border-blue-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '450ms'}}>
+                <div className="p-8">
+                     <h3 className="flex items-center text-2xl font-bold text-blue-600 dark:text-blue-400 mb-6">
+                        <span className="text-3xl mr-3">💊</span> Tratamento Recomendado
+                    </h3>
+                    <div className="grid gap-4">
+                         {parsed.treatment.split('\n').map((line, i) => {
+                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            if (!cleanLine) return null;
+                            return (
+                                <div key={i} className="flex items-start bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                                    <span className="text-blue-500 mr-3 text-xl">•</span>
+                                    <span className="text-gray-800 dark:text-gray-200 leading-relaxed font-medium">{cleanLine}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Stores Section */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-8 border border-emerald-100 dark:border-gray-700 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '600ms'}}>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <div className="p-3 bg-white dark:bg-emerald-900/30 rounded-xl mr-4 shadow-sm text-emerald-600 dark:text-emerald-400">
+                        <MapPinIcon className="w-6 h-6" />
+                    </div>
+                    Onde Encontrar Ajuda
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm leading-relaxed bg-white/50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg leading-relaxed bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl border border-emerald-100/50 dark:border-gray-700/50 backdrop-blur-sm">
                     {result.stores}
                 </p>
-                <div className="space-y-3">
+                <div className="grid sm:grid-cols-2 gap-4">
                     {result.groundingChunks?.map((chunk, index) => (
                         chunk.maps && (
                             <a
@@ -148,13 +266,15 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                                 href={chunk.maps.uri}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:shadow-md transition-all duration-200"
+                                className="group flex items-center p-4 bg-white dark:bg-gray-800/80 rounded-xl border border-emerald-100 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                             >
-                                <MapPinIcon className="w-5 h-5 mr-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                                <span className="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                                <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-lg mr-4 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 transition-colors">
+                                     <MapPinIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <span className="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors flex-1">
                                     {chunk.maps.title}
                                 </span>
-                                <svg className="w-4 h-4 ml-auto text-gray-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 text-gray-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                 </svg>
                             </a>
@@ -169,14 +289,14 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 const LoadingSpinner: React.FC = () => (
     <div className="flex flex-col items-center justify-center space-y-6 mt-12 animate-fade-in">
         <div className="relative">
-            <div className="w-20 h-20 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-24 h-24 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-24 h-24 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-                <SparkleIcon className="w-6 h-6 text-emerald-500 animate-pulse" />
+                <SparkleIcon className="w-8 h-8 text-emerald-500 animate-pulse" />
             </div>
         </div>
-        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">
-            Analisando sua cultura...
+        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse bg-white/50 dark:bg-gray-800/50 px-6 py-2 rounded-full shadow-sm">
+            Analisando sua cultura com IA...
         </p>
     </div>
 );
@@ -334,13 +454,13 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-950 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative selection:bg-emerald-200 dark:selection:bg-emerald-800">
-            <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+            <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm transition-all duration-300">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-                        <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
+                        <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                             <SparkleIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                         </div>
-                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 to-teal-600 dark:from-emerald-400 dark:to-teal-300 hidden sm:block">
+                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 to-teal-600 dark:from-emerald-400 dark:to-teal-300 hidden sm:block tracking-tight">
                             Agroconecta
                         </h1>
                     </div>
@@ -395,7 +515,7 @@ export default function App() {
                     </div>
                 )}
 
-                {previewUrl && (
+                {previewUrl && !analysisResult && (
                     <div className="w-full max-w-4xl mt-8 animate-fade-in-up">
                         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row">
                             
