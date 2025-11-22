@@ -2,9 +2,10 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GroundingChunk, AnalysisResult } from '../types';
 
-// This will be securely provided by the Vercel environment.
-// DO NOT PASTE YOUR KEY HERE.
-const API_KEY = process.env.API_KEY;
+// Ajuste para Vercel + Vite:
+// O Vite só expõe variáveis que começam com VITE_ para o navegador por segurança.
+// Usamos 'any' no import.meta para evitar erros de TypeScript se a configuração não estiver estrita.
+const API_KEY = (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
 
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -19,7 +20,7 @@ const fileToGenerativePart = async (file: File) => {
 
 export const analyzeCrop = async (imageFile: File, userLocation?: string): Promise<AnalysisResult> => {
     if (!API_KEY) {
-        throw new Error("A chave da API não está configurada. Por favor, certifique-se de que a variável de ambiente API_KEY está definida corretamente na Vercel.");
+        throw new Error("Chave da API não encontrada. IMPORTANTE: Na Vercel, renomeie sua variável de ambiente de 'API_KEY' para 'VITE_API_KEY' nas configurações do projeto e faça um novo Redeploy.");
     }
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
