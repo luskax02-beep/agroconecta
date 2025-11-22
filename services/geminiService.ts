@@ -1,11 +1,9 @@
-
 import { GoogleGenAI } from "@google/genai";
 import type { GroundingChunk, AnalysisResult } from '../types';
 
-// Ajuste para Vercel + Vite:
-// O Vite só expõe variáveis que começam com VITE_ para o navegador por segurança.
-// Usamos 'any' no import.meta para evitar erros de TypeScript se a configuração não estiver estrita.
-const API_KEY = (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
+// Initialize the Google GenAI client
+// The API key must be provided via the environment variable API_KEY
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -19,17 +17,11 @@ const fileToGenerativePart = async (file: File) => {
 };
 
 export const analyzeCrop = async (imageFile: File, userLocation?: string): Promise<AnalysisResult> => {
-    if (!API_KEY) {
-        throw new Error("Chave da API não encontrada. IMPORTANTE: Na Vercel, renomeie sua variável de ambiente de 'API_KEY' para 'VITE_API_KEY' nas configurações do projeto e faça um novo Redeploy.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-
     // Task 1: Analyze the image for pests/diseases
     const imageAnalysisPromise = async () => {
         const imagePart = await fileToGenerativePart(imageFile);
         
-        // Revised prompt for strict, structured output without conversational filler
+        // Strict, structured output prompt
         const prompt = `
             Atue como um agrônomo sênior especialista em fitopatologia. Analise esta imagem de uma cultura agrícola.
             
@@ -55,7 +47,7 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
             contents: [{ parts: [imagePart, {text: prompt}] }],
         });
 
-        return response.text;
+        return response.text || "Não foi possível gerar a análise.";
     };
 
     // Task 2: Find nearby stores using Maps Grounding based on user location
@@ -77,7 +69,7 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
         const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         
         return {
-            storesText: response.text,
+            storesText: response.text || "Não foi possível encontrar lojas.",
             groundingChunks: groundingChunks as GroundingChunk[]
         };
     };
