@@ -15,3 +15,17 @@ export interface AnalysisResult {
   stores: string;
   groundingChunks: GroundingChunk[];
 }
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  result: AnalysisResult;
+  thumbnail?: string; // Optional: preview image URL if we decide to store it
+}
+
+export interface UserProfile {
+  farmName: string;
+  location: string;
+  crops: string[];
+  history: HistoryItem[];
+}

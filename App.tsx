@@ -1,16 +1,22 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzeCrop } from './services/geminiService';
-import { AnalysisResult } from './types';
+import { AnalysisResult, UserProfile as UserProfileType } from './types';
 import SparkleIcon from './components/icons/SparkleIcon';
 import CameraIcon from './components/icons/CameraIcon';
 import UploadIcon from './components/icons/UploadIcon';
 import MapPinIcon from './components/icons/MapPinIcon';
+import UserIcon from './components/icons/UserIcon';
+import HelpIcon from './components/icons/HelpIcon';
+import CheckoutModal from './components/CheckoutModal';
+import UserProfile from './components/UserProfile';
+import TutorialModal from './components/TutorialModal';
+import Footer from './components/Footer';
 
 const FREE_PROMPT_LIMIT = 3;
 
 // Helper component defined outside the main component to avoid re-renders
-const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: boolean }> = ({ onImageSelect, disabled }) => {
+const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: boolean, onOpenTutorial: () => void }> = ({ onImageSelect, disabled, onOpenTutorial }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +35,7 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
             <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
                 Tire uma foto ou envie uma imagem da sua planta para identificar pragas, doenças e encontrar soluções.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
                 <input
                     type="file"
                     accept="image/*"
@@ -61,6 +67,16 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
                     Enviar Imagem
                 </button>
             </div>
+            
+            <div className="text-center">
+                <button 
+                    onClick={onOpenTutorial}
+                    className="inline-flex items-center text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors"
+                >
+                    <HelpIcon className="w-4 h-4 mr-1.5" />
+                    Veja como tirar a melhor foto
+                </button>
+            </div>
         </div>
     );
 };
@@ -70,13 +86,15 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     return (
         <div className="mt-8 w-full max-w-4xl mx-auto space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Diagnóstico</h3>
-                <div className="prose prose-emerald dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: result.diagnosis.replace(/\n/g, '<br />') }} />
+                <div className="prose prose-emerald dark:prose-invert max-w-none prose-headings:mb-2 prose-h2:text-xl prose-h2:font-bold prose-h2:text-emerald-600 dark:prose-h2:text-emerald-400 prose-p:mt-0 prose-p:mb-4" dangerouslySetInnerHTML={{ __html: result.diagnosis }} />
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Lojas Agropecuárias Próximas</h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{result.stores}</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <MapPinIcon className="w-6 h-6 mr-2 text-emerald-500" />
+                    Lojas Agropecuárias Próximas
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">{result.stores}</p>
                 <div className="space-y-3">
                     {result.groundingChunks?.map((chunk, index) => (
                         chunk.maps && (
@@ -114,7 +132,7 @@ const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe
         </p>
         <button
             onClick={onSubscribe}
-            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300"
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300 shadow-md hover:shadow-lg"
         >
             Assinar Agora
         </button>
@@ -130,11 +148,25 @@ export default function App() {
     const [error, setError] = useState<string | null>(null);
     const [promptCount, setPromptCount] = useState<number>(0);
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+    const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
+    
+    // User Profile State
+    const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+    const [userProfile, setUserProfile] = useState<UserProfileType>({
+        farmName: '',
+        location: '',
+        crops: [],
+        history: []
+    });
+
+    // Tutorial State
+    const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
     useEffect(() => {
         try {
             const storedCount = localStorage.getItem('agroconectaPromptCount');
             const storedSubscribed = localStorage.getItem('agroconectaIsSubscribed');
+            const storedProfile = localStorage.getItem('agroconectaProfile');
 
             if (storedCount) {
                 setPromptCount(parseInt(storedCount, 10));
@@ -142,10 +174,23 @@ export default function App() {
             if (storedSubscribed === 'true') {
                 setIsSubscribed(true);
             }
+            if (storedProfile) {
+                setUserProfile(JSON.parse(storedProfile));
+            }
         } catch (error) {
             console.error("Failed to access localStorage. This may happen in private browsing mode.", error);
         }
     }, []);
+
+    // Save profile to local storage whenever it changes
+    const handleUpdateProfile = (newProfile: UserProfileType) => {
+        setUserProfile(newProfile);
+        try {
+            localStorage.setItem('agroconectaProfile', JSON.stringify(newProfile));
+        } catch (e) {
+            console.error("Failed to save profile", e);
+        }
+    };
 
     const handleImageSelect = useCallback((file: File) => {
         setImageFile(file);
@@ -167,16 +212,38 @@ export default function App() {
         setAnalysisResult(null);
 
         try {
-            const result = await analyzeCrop(imageFile);
+            // Pass the user's location from their profile to the service
+            const result = await analyzeCrop(imageFile, userProfile.location);
             setAnalysisResult(result);
+            
+            // Logic for usage limits
             if (!isSubscribed) {
                 const newCount = promptCount + 1;
                 setPromptCount(newCount);
                 localStorage.setItem('agroconectaPromptCount', newCount.toString());
             }
-        } catch (e) {
+
+            // Save to history
+            const newHistoryItem = {
+                id: Date.now().toString(),
+                timestamp: Date.now(),
+                result: result
+            };
+            
+            const updatedProfile = {
+                ...userProfile,
+                history: [...userProfile.history, newHistoryItem]
+            };
+            handleUpdateProfile(updatedProfile);
+
+        } catch (e: any) {
             console.error(e);
-            setError("Ocorreu um erro ao analisar a imagem. Por favor, tente novamente.");
+            // More friendly error message for API issues
+            if (e.message && (e.message.includes('403') || e.message.includes('API key'))) {
+                 setError("Erro de configuração da API. Verifique se sua chave está correta na Vercel.");
+            } else {
+                 setError("Ocorreu um erro ao analisar a imagem. Por favor, tente novamente.");
+            }
         } finally {
             setLoading(false);
         }
@@ -189,49 +256,75 @@ export default function App() {
         setError(null);
     };
 
-    const handleSubscribe = () => {
+    const handleOpenCheckout = () => {
+        setIsCheckoutOpen(true);
+    };
+
+    const handlePaymentSuccess = () => {
         setIsSubscribed(true);
         localStorage.setItem('agroconectaIsSubscribed', 'true');
         setError(null);
+        setTimeout(() => {
+            setIsCheckoutOpen(false);
+        }, 1500); // Wait for success animation in modal before closing
     };
 
     const promptsRemaining = FREE_PROMPT_LIMIT - promptCount;
     const canAnalyze = isSubscribed || promptCount < FREE_PROMPT_LIMIT;
 
     return (
-        <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500">
+        <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative">
             <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-10">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-center relative">
-                    <SparkleIcon className="w-8 h-8 text-emerald-500 mr-3" />
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        Agroconecta
-                    </h1>
-                     <div className="absolute top-1/2 -translate-y-1/2 right-4">
-                        {isSubscribed ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                                <SparkleIcon className="w-4 h-4 mr-1.5" />
-                                Premium
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                                Análises Restantes: {promptsRemaining < 0 ? 0 : promptsRemaining}
-                            </span>
-                        )}
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
+                    {/* Logo Area */}
+                    <div className="flex items-center">
+                        <SparkleIcon className="w-8 h-8 text-emerald-500 mr-3" />
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white hidden sm:block">
+                            Agroconecta
+                        </h1>
+                    </div>
+                    
+                    {/* Right Side Controls */}
+                    <div className="flex items-center gap-3">
+                         <div className="hidden sm:block">
+                            {isSubscribed ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                                    <SparkleIcon className="w-4 h-4 mr-1.5" />
+                                    Premium
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                    Restam: {promptsRemaining < 0 ? 0 : promptsRemaining}
+                                </span>
+                            )}
+                        </div>
+                        
+                        <button 
+                            onClick={() => setIsProfileOpen(true)}
+                            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                            aria-label="Meu Perfil"
+                        >
+                            <UserIcon className="w-6 h-6" />
+                        </button>
                     </div>
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center">
+            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow">
                 {!previewUrl && (
                      canAnalyze ? (
-                        <ImageSelector onImageSelect={handleImageSelect} disabled={loading} />
+                        <ImageSelector 
+                            onImageSelect={handleImageSelect} 
+                            disabled={loading} 
+                            onOpenTutorial={() => setIsTutorialOpen(true)}
+                        />
                     ) : (
-                        <SubscriptionPrompt onSubscribe={handleSubscribe} />
+                        <SubscriptionPrompt onSubscribe={handleOpenCheckout} />
                     )
                 )}
 
                 {error && <div className="mt-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative w-full max-w-lg text-center" role="alert">
-                    <strong className="font-bold">Erro: </strong>
+                    <strong className="font-bold">Atenção: </strong>
                     <span className="block sm:inline">{error}</span>
                 </div>}
 
@@ -243,7 +336,7 @@ export default function App() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={loading || !canAnalyze}
-                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all"
                             >
                                 <SparkleIcon className="w-5 h-5 mr-2 animate-pulse" />
                                 {loading ? 'Analisando...' : 'Analisar Imagem'}
@@ -251,7 +344,7 @@ export default function App() {
                              <button
                                 onClick={handleClear}
                                 disabled={loading}
-                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
+                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"
                             >
                                 Escolher Outra
                             </button>
@@ -263,6 +356,25 @@ export default function App() {
                 {analysisResult && <AnalysisDisplay result={analysisResult} />}
 
             </main>
+            <Footer />
+
+            <CheckoutModal 
+                isOpen={isCheckoutOpen} 
+                onClose={() => setIsCheckoutOpen(false)} 
+                onSuccess={handlePaymentSuccess} 
+            />
+
+            <UserProfile 
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
+                profile={userProfile}
+                onUpdateProfile={handleUpdateProfile}
+            />
+
+            <TutorialModal
+                isOpen={isTutorialOpen}
+                onClose={() => setIsTutorialOpen(false)}
+            />
         </div>
     );
 }

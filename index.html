@@ -1,45 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-g" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agroconecta</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <style>
-      /* Barra de rolagem personalizada */
-      ::-webkit-scrollbar { width: 8px; }
-      ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-      ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: #555; }
-      .dark ::-webkit-scrollbar-track { background: #2d3748; }
-      .dark ::-webkit-scrollbar-thumb { background: #718096; }
-      .dark ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
-    </style>
-
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "react": "https://aistudiocdn.com/react@^19.2.0",
-        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1"
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 8px;
       }
-    }
-    </script>
-  </head>
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+      .dark ::-webkit-scrollbar-track {
+        background: #2d3748;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #718096;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1"
+  }
+}
+</script>
+</head>
   <body class="bg-gray-100 dark:bg-gray-900">
-    
-    <script>
-      // A chave foi adicionada aqui para facilitar o teste local.
-      // Em produção real, isso deve ser movido para o backend.
-      window.GEMINI_API_KEY = "AIzaSyAoRY7MO4I4J1H_bYV0hj8R0DCl-JlNy0k";
-    </script>
-
     <div id="root"></div>
-    
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
