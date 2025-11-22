@@ -18,6 +18,7 @@ const FREE_PROMPT_LIMIT = 3;
 // Helper component defined outside the main component to avoid re-renders
 const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: boolean, onOpenTutorial: () => void }> = ({ onImageSelect, disabled, onOpenTutorial }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -29,53 +30,93 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
         fileInputRef.current?.click();
     };
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            onImageSelect(e.dataTransfer.files[0]);
+        }
+    };
+
     return (
-        <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 text-center">Analise sua Cultura</h2>
-            <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
-                Tire uma foto ou envie uma imagem da sua planta para identificar pragas, doenças e encontrar soluções.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    ref={fileInputRef}
-                    className="hidden"
-                    disabled={disabled}
-                />
-                <button
-                    onClick={() => {
-                        fileInputRef.current?.setAttribute('capture', 'environment');
-                        triggerFileInput();
-                    }}
-                    disabled={disabled}
-                    className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300"
+        <div className="w-full max-w-xl mx-auto animate-fade-in-up">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Analise sua Cultura</h2>
+                    <p className="text-gray-600 dark:text-gray-300">
+                        Identifique pragas e doenças com a precisão da IA
+                    </p>
+                </div>
+
+                <div 
+                    className={`relative group border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-700/30
+                    ${isDragOver ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 scale-[1.01]' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 dark:hover:border-emerald-500'}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                 >
-                    <CameraIcon className="w-6 h-6 mr-3" />
-                    Tirar Foto
-                </button>
-                <button
-                    onClick={() => {
-                        fileInputRef.current?.removeAttribute('capture');
-                        triggerFileInput();
-                    }}
-                    disabled={disabled}
-                    className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300"
-                >
-                    <UploadIcon className="w-6 h-6 mr-3" />
-                    Enviar Imagem
-                </button>
-            </div>
-            
-            <div className="text-center">
-                <button 
-                    onClick={onOpenTutorial}
-                    className="inline-flex items-center text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors"
-                >
-                    <HelpIcon className="w-4 h-4 mr-1.5" />
-                    Veja como tirar a melhor foto
-                </button>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        ref={fileInputRef}
+                        className="hidden"
+                        disabled={disabled}
+                    />
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                        <button
+                            onClick={() => {
+                                fileInputRef.current?.setAttribute('capture', 'environment');
+                                triggerFileInput();
+                            }}
+                            disabled={disabled}
+                            className="flex-1 group/btn relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-3.5 text-white shadow-lg transition-all hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            <div className="relative z-10 flex items-center justify-center font-semibold tracking-wide">
+                                <CameraIcon className="w-5 h-5 mr-2.5 transition-transform group-hover/btn:scale-110" />
+                                Tirar Foto
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                fileInputRef.current?.removeAttribute('capture');
+                                triggerFileInput();
+                            }}
+                            disabled={disabled}
+                            className="flex-1 group/btn relative overflow-hidden rounded-xl bg-white dark:bg-gray-700 px-6 py-3.5 text-gray-700 dark:text-white shadow-md border border-gray-200 dark:border-gray-600 transition-all hover:bg-gray-50 dark:hover:bg-gray-600 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70"
+                        >
+                            <div className="relative z-10 flex items-center justify-center font-semibold tracking-wide">
+                                <UploadIcon className="w-5 h-5 mr-2.5 text-emerald-600 dark:text-emerald-400 transition-transform group-hover/btn:-translate-y-1" />
+                                Upload
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-medium uppercase tracking-wider">
+                        Ou arraste e solte aqui
+                    </p>
+                </div>
+                
+                <div className="text-center mt-6">
+                    <button 
+                        onClick={onOpenTutorial}
+                        className="inline-flex items-center text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors px-4 py-2 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                    >
+                        <HelpIcon className="w-4 h-4 mr-1.5" />
+                        Dicas para a foto perfeita
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -84,17 +125,21 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
 // Helper component for displaying results
 const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     return (
-        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <div className="prose prose-emerald dark:prose-invert max-w-none prose-headings:mb-2 prose-h2:text-xl prose-h2:font-bold prose-h2:text-emerald-600 dark:prose-h2:text-emerald-400 prose-p:mt-0 prose-p:mb-4" dangerouslySetInnerHTML={{ __html: result.diagnosis }} />
+        <div className="mt-8 w-full max-w-4xl mx-auto space-y-8 animate-fade-in-up delay-100">
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
+                <div className="prose prose-emerald dark:prose-invert max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:text-emerald-700 dark:prose-h2:text-emerald-400 prose-h3:text-lg prose-p:leading-relaxed prose-li:marker:text-emerald-500" dangerouslySetInnerHTML={{ __html: result.diagnosis }} />
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                    <MapPinIcon className="w-6 h-6 mr-2 text-emerald-500" />
+            <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl p-8 border border-emerald-100 dark:border-gray-700">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg mr-3">
+                        <MapPinIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
                     Lojas Agropecuárias Próximas
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">{result.stores}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm leading-relaxed bg-white/50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                    {result.stores}
+                </p>
                 <div className="space-y-3">
                     {result.groundingChunks?.map((chunk, index) => (
                         chunk.maps && (
@@ -103,10 +148,15 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                                 href={chunk.maps.uri}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="group flex items-center p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:shadow-md transition-all duration-200"
                             >
-                                <MapPinIcon className="w-5 h-5 mr-3 text-emerald-500" />
-                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{chunk.maps.title}</span>
+                                <MapPinIcon className="w-5 h-5 mr-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                                    {chunk.maps.title}
+                                </span>
+                                <svg className="w-4 h-4 ml-auto text-gray-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
                             </a>
                         )
                     ))}
@@ -117,24 +167,39 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 };
 
 const LoadingSpinner: React.FC = () => (
-    <div className="flex flex-col items-center justify-center space-y-4 mt-8">
-        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-lg text-gray-700 dark:text-gray-300">Analisando sua cultura... Isso pode levar um momento.</p>
+    <div className="flex flex-col items-center justify-center space-y-6 mt-12 animate-fade-in">
+        <div className="relative">
+            <div className="w-20 h-20 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <SparkleIcon className="w-6 h-6 text-emerald-500 animate-pulse" />
+            </div>
+        </div>
+        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">
+            Analisando sua cultura...
+        </p>
     </div>
 );
 
 const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe }) => (
-    <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-emerald-500 dark:border-emerald-400 text-center">
-        <SparkleIcon className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Limite Gratuito Atingido</h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Você utilizou suas 3 análises gratuitas. Assine o Agroconecta Premium para obter análises ilimitadas.
+    <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-emerald-500/30 text-center animate-fade-in-up">
+        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <SparkleIcon className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Limite Gratuito Atingido</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+            Você utilizou suas 3 análises gratuitas. Desbloqueie todo o potencial do Agroconecta Premium.
         </p>
         <button
             onClick={onSubscribe}
-            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300 shadow-md hover:shadow-lg"
+            className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-4 text-white shadow-lg transition-all hover:shadow-emerald-500/40 hover:-translate-y-0.5"
         >
-            Assinar Agora
+            <span className="relative z-10 flex items-center justify-center text-lg font-bold">
+                Assinar Agora
+                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </span>
         </button>
     </div>
 );
@@ -178,11 +243,10 @@ export default function App() {
                 setUserProfile(JSON.parse(storedProfile));
             }
         } catch (error) {
-            console.error("Failed to access localStorage. This may happen in private browsing mode.", error);
+            console.error("Failed to access localStorage.", error);
         }
     }, []);
 
-    // Save profile to local storage whenever it changes
     const handleUpdateProfile = (newProfile: UserProfileType) => {
         setUserProfile(newProfile);
         try {
@@ -212,18 +276,15 @@ export default function App() {
         setAnalysisResult(null);
 
         try {
-            // Pass the user's location from their profile to the service
             const result = await analyzeCrop(imageFile, userProfile.location);
             setAnalysisResult(result);
             
-            // Logic for usage limits
             if (!isSubscribed) {
                 const newCount = promptCount + 1;
                 setPromptCount(newCount);
                 localStorage.setItem('agroconectaPromptCount', newCount.toString());
             }
 
-            // Save to history
             const newHistoryItem = {
                 id: Date.now().toString(),
                 timestamp: Date.now(),
@@ -238,7 +299,6 @@ export default function App() {
 
         } catch (e: any) {
             console.error(e);
-            // More friendly error message for API issues
             if (e.message && (e.message.includes('403') || e.message.includes('API key'))) {
                  setError("Erro de configuração da API. Verifique se sua chave está correta na Vercel.");
             } else {
@@ -266,88 +326,109 @@ export default function App() {
         setError(null);
         setTimeout(() => {
             setIsCheckoutOpen(false);
-        }, 1500); // Wait for success animation in modal before closing
+        }, 1500);
     };
 
     const promptsRemaining = FREE_PROMPT_LIMIT - promptCount;
     const canAnalyze = isSubscribed || promptCount < FREE_PROMPT_LIMIT;
 
     return (
-        <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative">
-            <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-10">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
-                    {/* Logo Area */}
-                    <div className="flex items-center">
-                        <SparkleIcon className="w-8 h-8 text-emerald-500 mr-3" />
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white hidden sm:block">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-950 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative selection:bg-emerald-200 dark:selection:bg-emerald-800">
+            <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+                        <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
+                            <SparkleIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 to-teal-600 dark:from-emerald-400 dark:to-teal-300 hidden sm:block">
                             Agroconecta
                         </h1>
                     </div>
                     
-                    {/* Right Side Controls */}
-                    <div className="flex items-center gap-3">
-                         <div className="hidden sm:block">
+                    <div className="flex items-center gap-4">
+                         <div className="hidden sm:flex items-center">
                             {isSubscribed ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                                    <SparkleIcon className="w-4 h-4 mr-1.5" />
-                                    Premium
+                                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 dark:from-emerald-900/50 dark:to-teal-900/50 dark:text-emerald-200 shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
+                                    <SparkleIcon className="w-3.5 h-3.5 mr-2" />
+                                    PREMIUM
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                                    Restam: {promptsRemaining < 0 ? 0 : promptsRemaining}
-                                </span>
+                                <div className="bg-white dark:bg-gray-800 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Restam: </span>
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{promptsRemaining < 0 ? 0 : promptsRemaining}</span>
+                                </div>
                             )}
                         </div>
                         
                         <button 
                             onClick={() => setIsProfileOpen(true)}
-                            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                            className="relative p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
                             aria-label="Meu Perfil"
                         >
-                            <UserIcon className="w-6 h-6" />
+                            <UserIcon className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow">
+            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow w-full max-w-5xl">
                 {!previewUrl && (
                      canAnalyze ? (
-                        <ImageSelector 
-                            onImageSelect={handleImageSelect} 
-                            disabled={loading} 
-                            onOpenTutorial={() => setIsTutorialOpen(true)}
-                        />
+                        <div className="w-full py-10">
+                            <ImageSelector 
+                                onImageSelect={handleImageSelect} 
+                                disabled={loading} 
+                                onOpenTutorial={() => setIsTutorialOpen(true)}
+                            />
+                        </div>
                     ) : (
-                        <SubscriptionPrompt onSubscribe={handleOpenCheckout} />
+                        <div className="w-full py-10">
+                            <SubscriptionPrompt onSubscribe={handleOpenCheckout} />
+                        </div>
                     )
                 )}
 
-                {error && <div className="mt-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative w-full max-w-lg text-center" role="alert">
-                    <strong className="font-bold">Atenção: </strong>
-                    <span className="block sm:inline">{error}</span>
-                </div>}
+                {error && (
+                    <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-xl shadow-sm relative w-full max-w-lg text-center animate-fade-in" role="alert">
+                        <strong className="font-bold mr-1">Atenção:</strong>
+                        <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
 
                 {previewUrl && (
-                    <div className="w-full max-w-lg mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Imagem Selecionada</h2>
-                        <img src={previewUrl} alt="Pré-visualização da cultura" className="rounded-lg w-full h-auto object-contain max-h-80" />
-                        <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={loading || !canAnalyze}
-                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all"
-                            >
-                                <SparkleIcon className="w-5 h-5 mr-2 animate-pulse" />
-                                {loading ? 'Analisando...' : 'Analisar Imagem'}
-                            </button>
-                             <button
-                                onClick={handleClear}
-                                disabled={loading}
-                                className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"
-                            >
-                                Escolher Outra
-                            </button>
+                    <div className="w-full max-w-4xl mt-8 animate-fade-in-up">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row">
+                            
+                            <div className="md:w-1/2 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-6 md:p-10 relative">
+                                <div className="relative group w-full h-full flex items-center justify-center">
+                                    <img src={previewUrl} alt="Pré-visualização" className="rounded-xl shadow-lg max-h-[400px] object-contain relative z-10" />
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl"></div>
+                                </div>
+                            </div>
+
+                            <div className="md:w-1/2 p-8 flex flex-col justify-center">
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Imagem Pronta</h2>
+                                <div className="space-y-4">
+                                    <button
+                                        onClick={handleAnalyze}
+                                        disabled={loading || !canAnalyze}
+                                        className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4 text-white shadow-lg transition-all hover:shadow-emerald-500/40 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        <div className="relative z-10 flex items-center justify-center text-lg font-semibold">
+                                            <SparkleIcon className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                                            {loading ? 'Analisando...' : 'Realizar Análise'}
+                                        </div>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={handleClear}
+                                        disabled={loading}
+                                        className="w-full rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-6 py-4 text-gray-700 dark:text-gray-200 font-semibold shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:-translate-y-0.5"
+                                    >
+                                        Escolher Outra Imagem
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

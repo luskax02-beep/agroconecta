@@ -2,40 +2,60 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-g" />
+    <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agroconecta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'media', // or 'class'
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              emerald: {
+                450: '#10b981', // Custom shade if needed
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       /* Custom scrollbar for better aesthetics */
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #888;
+        background: #cbd5e1;
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #555;
-      }
-      .dark ::-webkit-scrollbar-track {
-        background: #2d3748;
+        background: #94a3b8;
       }
       .dark ::-webkit-scrollbar-thumb {
-        background: #718096;
+        background: #4b5563;
       }
       .dark ::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
+        background: #6b7280;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -46,7 +66,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-100 dark:bg-gray-900">
+  <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
