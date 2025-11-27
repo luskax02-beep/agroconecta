@@ -84,3 +84,30 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
         groundingChunks: storesData.groundingChunks
     };
 };
+
+export const analyzeTerrain = async (location: string): Promise<string> => {
+    const prompt = `
+        Atue como um engenheiro agrônomo e topógrafo.
+        Realize uma análise técnica detalhada da região de: ${location}.
+        
+        Use a ferramenta Google Maps para obter dados reais sobre o local.
+        
+        Gere um relatório técnico de "Projeção de Viabilidade Agrícola" contendo:
+        1. **Clima e Pluviometria**: Padrões de chuva e temperatura média.
+        2. **Tipografia Estimada**: Se a região é plana, montanhosa, etc.
+        3. **Aptidão Agrícola**: Quais culturas são mais indicadas para essa região específica.
+        4. **Dados de Solo (Estimado)**: Tipo de solo predominante na região (argiloso, arenoso, terra roxa, etc).
+
+        Formate a resposta em Markdown limpo, com tópicos claros. Seja técnico e preciso.
+    `;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+            tools: [{googleMaps: {}}],
+        },
+    });
+
+    return response.text || "Não foi possível analisar a região.";
+};

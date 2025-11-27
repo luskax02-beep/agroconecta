@@ -29,3 +29,16 @@ export interface UserProfile {
   crops: string[];
   history: HistoryItem[];
 }
+
+export interface PastureListing {
+    id: string;
+    title: string;
+    location: string;
+    area: number; // em hectares
+    price: number; // valor mensal
+    description: string;
+    contactPhone: string;
+    features: string[]; // ex: 'Cerca Nova', 'Água Abundante'
+    ownerName: string;
+    createdAt: number;
+}

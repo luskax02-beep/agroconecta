@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzeCrop } from './services/geminiService';
 import { AnalysisResult, UserProfile as UserProfileType } from './types';
@@ -7,11 +8,15 @@ import UploadIcon from './components/icons/UploadIcon';
 import MapPinIcon from './components/icons/MapPinIcon';
 import UserIcon from './components/icons/UserIcon';
 import HelpIcon from './components/icons/HelpIcon';
+import CowIcon from './components/icons/CowIcon';
+import GlobeIcon from './components/icons/GlobeIcon';
 import CheckoutModal from './components/CheckoutModal';
 import UserProfile from './components/UserProfile';
 import TutorialModal from './components/TutorialModal';
 import Footer from './components/Footer';
 import Background3D from './components/Background3D';
+import PastoConecta from './components/PastoConecta';
+import AgroMap3D from './components/AgroMap3D';
 
 const FREE_PROMPT_LIMIT = 3;
 
@@ -348,6 +353,12 @@ export default function App() {
     // Tutorial State
     const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
+    // PastoConecta State
+    const [isPastoConectaOpen, setIsPastoConectaOpen] = useState<boolean>(false);
+
+    // AgroMap 3D State
+    const [isAgroMapOpen, setIsAgroMapOpen] = useState<boolean>(false);
+
     useEffect(() => {
         try {
             const storedCount = localStorage.getItem('agroconectaPromptCount');
@@ -484,13 +495,32 @@ export default function App() {
                             )}
                         </div>
                         
-                        <button 
-                            onClick={() => setIsProfileOpen(true)}
-                            className="relative p-2.5 rounded-xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
-                            aria-label="Meu Perfil"
-                        >
-                            <UserIcon className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                             {/* AgroMap 3D Button */}
+                             <button
+                                onClick={() => setIsAgroMapOpen(true)}
+                                className="relative p-2.5 rounded-xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95 group"
+                                title="AgroMap 3D"
+                            >
+                                <GlobeIcon className="w-5 h-5 group-hover:animate-spin-slow" />
+                            </button>
+
+                             <button
+                                onClick={() => setIsPastoConectaOpen(true)}
+                                className="relative p-2.5 rounded-xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
+                                title="PastoConecta"
+                            >
+                                <CowIcon className="w-5 h-5" />
+                            </button>
+
+                            <button 
+                                onClick={() => setIsProfileOpen(true)}
+                                className="relative p-2.5 rounded-xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
+                                aria-label="Meu Perfil"
+                            >
+                                <UserIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -574,6 +604,16 @@ export default function App() {
                 onClose={() => setIsProfileOpen(false)}
                 profile={userProfile}
                 onUpdateProfile={handleUpdateProfile}
+            />
+
+            <PastoConecta
+                isOpen={isPastoConectaOpen}
+                onClose={() => setIsPastoConectaOpen(false)}
+            />
+            
+            <AgroMap3D
+                isOpen={isAgroMapOpen}
+                onClose={() => setIsAgroMapOpen(false)}
             />
 
             <TutorialModal
