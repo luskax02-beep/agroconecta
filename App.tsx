@@ -11,6 +11,7 @@ import CheckoutModal from './components/CheckoutModal';
 import UserProfile from './components/UserProfile';
 import TutorialModal from './components/TutorialModal';
 import Footer from './components/Footer';
+import Background3D from './components/Background3D';
 
 const FREE_PROMPT_LIMIT = 3;
 
@@ -78,8 +79,8 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto animate-fade-in-up">
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
+        <div className="w-full max-w-xl mx-auto animate-fade-in-up pointer-events-auto">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
                 <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Analise sua Cultura</h2>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -88,7 +89,7 @@ const ImageSelector: React.FC<{ onImageSelect: (file: File) => void, disabled: b
                 </div>
 
                 <div 
-                    className={`relative group border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-700/30
+                    className={`relative group border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-gray-50/50 dark:bg-gray-700/30
                     ${isDragOver ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 scale-[1.01]' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 dark:hover:border-emerald-500'}`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -158,8 +159,8 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     // Fallback for unstructured data
     if (parsed.raw) {
          return (
-            <div className="mt-8 w-full max-w-4xl mx-auto animate-fade-in-up">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div className="mt-8 w-full max-w-4xl mx-auto animate-fade-in-up pointer-events-auto">
+                <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
                      <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed">{parsed.raw}</pre>
                 </div>
             </div>
@@ -167,9 +168,9 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     }
 
     return (
-        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6 pb-12">
+        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6 pb-12 pointer-events-auto">
             {/* Diagnosis Section - Green/Emphasis */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-l-8 border-emerald-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '0ms'}}>
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden border-l-8 border-emerald-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '0ms'}}>
                 <div className="p-8">
                     <h3 className="flex items-center text-2xl font-bold text-emerald-800 dark:text-emerald-400 mb-4">
                         <span className="text-3xl mr-3">🔍</span> Diagnóstico
@@ -182,7 +183,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Symptoms Section - Amber/Warning */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-t-4 border-amber-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '150ms'}}>
+                <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden border-t-4 border-amber-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '150ms'}}>
                     <div className="p-6 h-full">
                         <h3 className="flex items-center text-xl font-bold text-amber-600 dark:text-amber-400 mb-5 pb-2 border-b border-amber-100 dark:border-gray-700">
                             <span className="text-2xl mr-3">📝</span> Sintomas
@@ -203,7 +204,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 </div>
 
                 {/* Prevention Section - Purple/Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-t-4 border-purple-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '300ms'}}>
+                <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden border-t-4 border-purple-500 animate-fade-in-up transform transition-all hover:scale-[1.01]" style={{animationDelay: '300ms'}}>
                     <div className="p-6 h-full">
                          <h3 className="flex items-center text-xl font-bold text-purple-600 dark:text-purple-400 mb-5 pb-2 border-b border-purple-100 dark:border-gray-700">
                             <span className="text-2xl mr-3">🛡️</span> Prevenção
@@ -227,7 +228,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             </div>
 
              {/* Treatment Section - Blue/Medical - Full Width */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-l-8 border-blue-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '450ms'}}>
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden border-l-8 border-blue-500 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '450ms'}}>
                 <div className="p-8">
                      <h3 className="flex items-center text-2xl font-bold text-blue-600 dark:text-blue-400 mb-6">
                         <span className="text-3xl mr-3">💊</span> Tratamento Recomendado
@@ -248,7 +249,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             </div>
 
             {/* Stores Section */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-8 border border-emerald-100 dark:border-gray-700 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '600ms'}}>
+            <div className="bg-gradient-to-br from-emerald-50/90 to-teal-50/90 dark:from-gray-800/90 dark:to-gray-900/90 backdrop-blur-md rounded-2xl shadow-lg p-8 border border-emerald-100 dark:border-gray-700 animate-fade-in-up transform transition-all hover:shadow-xl" style={{animationDelay: '600ms'}}>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                     <div className="p-3 bg-white dark:bg-emerald-900/30 rounded-xl mr-4 shadow-sm text-emerald-600 dark:text-emerald-400">
                         <MapPinIcon className="w-6 h-6" />
@@ -266,7 +267,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                                 href={chunk.maps.uri}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center p-4 bg-white dark:bg-gray-800/80 rounded-xl border border-emerald-100 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                                className="group flex items-center p-4 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-emerald-100 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                             >
                                 <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-lg mr-4 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 transition-colors">
                                      <MapPinIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -287,7 +288,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 };
 
 const LoadingSpinner: React.FC = () => (
-    <div className="flex flex-col items-center justify-center space-y-6 mt-12 animate-fade-in">
+    <div className="flex flex-col items-center justify-center space-y-6 mt-12 animate-fade-in relative z-20 pointer-events-auto">
         <div className="relative">
             <div className="w-24 h-24 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
             <div className="absolute top-0 left-0 w-24 h-24 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -295,14 +296,14 @@ const LoadingSpinner: React.FC = () => (
                 <SparkleIcon className="w-8 h-8 text-emerald-500 animate-pulse" />
             </div>
         </div>
-        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse bg-white/50 dark:bg-gray-800/50 px-6 py-2 rounded-full shadow-sm">
+        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse bg-white/50 dark:bg-gray-800/50 px-6 py-2 rounded-full shadow-sm backdrop-blur-sm">
             Analisando sua cultura com IA...
         </p>
     </div>
 );
 
 const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe }) => (
-    <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-emerald-500/30 text-center animate-fade-in-up">
+    <div className="w-full max-w-lg mx-auto bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-emerald-500/30 text-center animate-fade-in-up pointer-events-auto">
         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <SparkleIcon className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
         </div>
@@ -453,9 +454,12 @@ export default function App() {
     const canAnalyze = isSubscribed || promptCount < FREE_PROMPT_LIMIT;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-950 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative selection:bg-emerald-200 dark:selection:bg-emerald-800">
-            <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm transition-all duration-300">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="min-h-screen bg-transparent text-gray-800 dark:text-gray-200 font-sans transition-colors duration-500 flex flex-col relative selection:bg-emerald-200 dark:selection:bg-emerald-800">
+            {/* 3D Background - Placed absolutely behind content */}
+            <Background3D />
+            
+            <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm transition-all duration-300 pointer-events-none">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between pointer-events-auto">
                     <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
                         <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                             <SparkleIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
@@ -473,7 +477,7 @@ export default function App() {
                                     PREMIUM
                                 </span>
                             ) : (
-                                <div className="bg-white dark:bg-gray-800 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="bg-white/90 dark:bg-gray-800/90 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
                                     <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Restam: </span>
                                     <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{promptsRemaining < 0 ? 0 : promptsRemaining}</span>
                                 </div>
@@ -482,7 +486,7 @@ export default function App() {
                         
                         <button 
                             onClick={() => setIsProfileOpen(true)}
-                            className="relative p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
+                            className="relative p-2.5 rounded-xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 active:scale-95"
                             aria-label="Meu Perfil"
                         >
                             <UserIcon className="w-5 h-5" />
@@ -491,7 +495,7 @@ export default function App() {
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow w-full max-w-5xl">
+            <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow w-full max-w-5xl z-10 relative pointer-events-none">
                 {!previewUrl && (
                      canAnalyze ? (
                         <div className="w-full py-10">
@@ -509,15 +513,15 @@ export default function App() {
                 )}
 
                 {error && (
-                    <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-xl shadow-sm relative w-full max-w-lg text-center animate-fade-in" role="alert">
+                    <div className="mt-6 bg-red-50/90 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-xl shadow-sm relative w-full max-w-lg text-center animate-fade-in backdrop-blur-sm pointer-events-auto" role="alert">
                         <strong className="font-bold mr-1">Atenção:</strong>
                         <span className="block sm:inline">{error}</span>
                     </div>
                 )}
 
                 {previewUrl && !analysisResult && (
-                    <div className="w-full max-w-4xl mt-8 animate-fade-in-up">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row">
+                    <div className="w-full max-w-4xl mt-8 animate-fade-in-up pointer-events-auto">
+                        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row">
                             
                             <div className="md:w-1/2 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-6 md:p-10 relative">
                                 <div className="relative group w-full h-full flex items-center justify-center">
