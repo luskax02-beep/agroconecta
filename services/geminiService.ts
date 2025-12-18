@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import type { GroundingChunk, AnalysisResult } from '../types';
+import { GoogleGenAI, Type } from "@google/genai";
+import type { GroundingChunk, AnalysisResult, TerrainAnalysis } from '../types';
 
 // Initialization following Google GenAI SDK strict guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -46,6 +46,7 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
             contents: [{ parts: [imagePart, {text: prompt}] }],
         });
 
+        // Use response.text as a property, not a method
         return response.text || "Não foi possível gerar a análise.";
     };
 
@@ -67,6 +68,7 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
 
         const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         
+        // Use response.text as a property
         return {
             storesText: response.text || "Não foi possível encontrar lojas.",
             groundingChunks: groundingChunks as GroundingChunk[]
@@ -85,20 +87,32 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
     };
 };
 
-export const analyzeTerrain = async (location: string): Promise<string> => {
+export const analyzeTerrain = async (location: string): Promise<TerrainAnalysis> => {
+    // NOTA: Ao usar googleMaps tool, NÃO PODEMOS usar responseMimeType: "application/json".
+    // Devemos instruir o modelo via texto a retornar JSON.
     const prompt = `
-        Atue como um engenheiro agrônomo e topógrafo.
-        Realize uma análise técnica detalhada da região de: ${location}.
-        
-        Use a ferramenta Google Maps para obter dados reais sobre o local.
-        
-        Gere um relatório técnico de "Projeção de Viabilidade Agrícola" contendo:
-        1. **Clima e Pluviometria**: Padrões de chuva e temperatura média.
-        2. **Tipografia Estimada**: Se a região é plana, montanhosa, etc.
-        3. **Aptidão Agrícola**: Quais culturas são mais indicadas para essa região específica.
-        4. **Dados de Solo (Estimado)**: Tipo de solo predominante na região (argiloso, arenoso, terra roxa, etc).
+        Você é um sistema de topografia avançado. Analise a região de: "${location}".
+        Use a ferramenta Google Maps para encontrar dados REAIS sobre a geografia, hidrografia e infraestrutura próxima.
 
-        Formate a resposta em Markdown limpo, com tópicos claros. Seja técnico e preciso.
+        Responda APENAS com um objeto JSON válido (sem markdown \`\`\`json ... \`\`\` se possível, ou dentro dele), seguindo rigorosamente esta estrutura:
+
+        {
+            "locationName": "Nome formal da cidade/região encontrada",
+            "report": "Um relatório técnico agronômico detalhado (Markdown) cobrindo Clima, Relevo, Solo estimado e Culturas indicadas.",
+            "roughness": 0.5, 
+            "landmarks": [
+                {
+                    "name": "Nome do ponto de referência",
+                    "type": "water", 
+                    "description": "Breve descrição"
+                }
+            ]
+        }
+
+        Regras para os campos:
+        - "roughness": número float de 0.0 (plano) a 1.0 (muito montanhoso).
+        - "landmarks": Lista de 3 a 5 pontos reais próximos.
+        - "landmarks[].type": deve ser estritamente um destes: 'water', 'infrastructure', 'terrain', 'city'.
     `;
 
     const response = await ai.models.generateContent({
@@ -106,8 +120,32 @@ export const analyzeTerrain = async (location: string): Promise<string> => {
         contents: prompt,
         config: {
             tools: [{googleMaps: {}}],
+            // REMOVIDO: responseMimeType e responseSchema (incompatíveis com googleMaps tool)
         },
     });
 
-    return response.text || "Não foi possível analisar a região.";
+    if (response.text) {
+        try {
+            // Tenta limpar blocos de código Markdown caso o modelo os inclua
+            let jsonString = response.text.trim();
+            const match = jsonString.match(/\{[\s\S]*\}/);
+            if (match) {
+                jsonString = match[0];
+            }
+            
+            return JSON.parse(jsonString) as TerrainAnalysis;
+        } catch (e) {
+            console.error("Failed to parse JSON from terrain analysis", e, response.text);
+            
+            // Fallback manual se o JSON falhar, para não quebrar a UI
+            return {
+                locationName: location,
+                report: response.text, // Retorna o texto cru como relatório
+                roughness: 0.5,
+                landmarks: []
+            };
+        }
+    }
+
+    throw new Error("Falha ao analisar o terreno: Sem resposta do modelo.");
 };

@@ -42,3 +42,16 @@ export interface PastureListing {
     ownerName: string;
     createdAt: number;
 }
+
+export interface Landmark {
+    name: string;
+    type: 'water' | 'infrastructure' | 'terrain' | 'city';
+    description: string;
+}
+
+export interface TerrainAnalysis {
+    locationName: string;
+    report: string;
+    roughness: number; // 0.0 (plano) a 1.0 (muito montanhoso)
+    landmarks: Landmark[];
+}
