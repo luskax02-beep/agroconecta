@@ -1,9 +1,170 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, Stars, PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
 import SparkleIcon from './icons/SparkleIcon';
 import CameraIcon from './icons/CameraIcon';
-import GlobeIcon from './icons/GlobeIcon';
 import MapPinIcon from './icons/MapPinIcon';
+import GlobeIcon from './icons/GlobeIcon';
+
+// --- 3D Components ---
+
+const BiomassParticles = () => {
+    const count = 300;
+    const mesh = useRef<THREE.Points>(null!);
+    
+    const { positions, colors } = useMemo(() => {
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+        const color = new THREE.Color('#4ade80'); // Green-400
+
+        for (let i = 0; i < count; i++) {
+            const r = (Math.random() - 0.5) * 5;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            
+            positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+            positions[i * 3 + 2] = r * Math.cos(phi);
+
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+        }
+        return { positions, colors };
+    }, []);
+
+    useFrame((state) => {
+        if (mesh.current) {
+            mesh.current.rotation.y = state.clock.getElapsedTime() * 0.2;
+            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.1;
+            const s = 1 + Math.sin(state.clock.getElapsedTime() * 2) * 0.1;
+            mesh.current.scale.set(s, s, s);
+        }
+    });
+
+    return (
+        <points ref={mesh}>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+                <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
+            </bufferGeometry>
+            <pointsMaterial size={0.15} vertexColors transparent opacity={0.8} sizeAttenuation />
+        </points>
+    );
+};
+
+const ScannerCube = () => {
+    const group = useRef<THREE.Group>(null!);
+    const scanLine = useRef<THREE.Mesh>(null!);
+
+    useFrame((state) => {
+        if (group.current) {
+            group.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.5) * 0.2;
+            group.current.rotation.y += 0.01;
+        }
+        if (scanLine.current) {
+            scanLine.current.position.y = Math.sin(state.clock.getElapsedTime() * 2) * 1.5;
+        }
+    });
+
+    return (
+        <group ref={group}>
+            <mesh>
+                <boxGeometry args={[2.5, 3.5, 0.2]} />
+                <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.1} />
+            </mesh>
+            <mesh ref={scanLine} rotation={[Math.PI/2, 0, 0]}>
+                <planeGeometry args={[3, 3]} />
+                <meshBasicMaterial color="#4ade80" transparent opacity={0.5} side={THREE.DoubleSide} />
+            </mesh>
+             {/* Corners */}
+            <group position={[0,0,0.1]}>
+                 <mesh position={[-1.2, 1.7, 0]}>
+                    <planeGeometry args={[0.5, 0.05]} />
+                    <meshBasicMaterial color="white" />
+                 </mesh>
+                 <mesh position={[-1.4, 1.5, 0]} rotation={[0,0,Math.PI/2]}>
+                    <planeGeometry args={[0.5, 0.05]} />
+                    <meshBasicMaterial color="white" />
+                 </mesh>
+                 {/* ... other corners implied for visual simplicity or add more meshes */}
+            </group>
+        </group>
+    );
+};
+
+const TerrainMesh = () => {
+    const mesh = useRef<THREE.Mesh>(null!);
+    
+    useFrame((state) => {
+        if(mesh.current) {
+            mesh.current.rotation.z += 0.002;
+        }
+    });
+
+    const geometry = useMemo(() => {
+        const geo = new THREE.PlaneGeometry(8, 8, 32, 32);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const z = Math.sin(x * 0.8) * Math.cos(y * 0.8) * 0.5 + Math.random() * 0.1;
+            pos.setZ(i, z);
+        }
+        geo.computeVertexNormals();
+        return geo;
+    }, []);
+
+    return (
+        <group rotation={[-Math.PI / 2.5, 0, 0]}>
+             <mesh ref={mesh} geometry={geometry}>
+                <meshStandardMaterial color="#3f3f46" wireframe />
+             </mesh>
+             <mesh position={[0,0,-0.5]}>
+                 <circleGeometry args={[4, 32]} />
+                 <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+             </mesh>
+        </group>
+    );
+};
+
+const SatelliteGlobe = () => {
+    const group = useRef<THREE.Group>(null!);
+    
+    useFrame((state) => {
+        if (group.current) {
+             group.current.rotation.y += 0.005;
+        }
+    });
+
+    return (
+        <group ref={group}>
+            <mesh>
+                <sphereGeometry args={[2, 32, 32]} />
+                <meshStandardMaterial color="#18181b" wireframe transparent opacity={0.3} emissive="#27272a" />
+            </mesh>
+            <mesh>
+                <sphereGeometry args={[1.9, 32, 32]} />
+                <meshBasicMaterial color="#000000" />
+            </mesh>
+            {/* Satellite */}
+            <group rotation={[0,0,Math.PI/4]}>
+                <mesh position={[2.8, 0, 0]}>
+                    <boxGeometry args={[0.2, 0.2, 0.2]} />
+                    <meshBasicMaterial color="white" />
+                </mesh>
+                <mesh rotation={[Math.PI/2,0,0]}>
+                     <ringGeometry args={[2.8, 2.82, 64]} />
+                     <meshBasicMaterial color="white" transparent opacity={0.2} side={THREE.DoubleSide} />
+                </mesh>
+            </group>
+        </group>
+    );
+};
+
+// --- Main Intro Component ---
 
 interface IntroAnimationProps {
     onFinish: () => void;
@@ -33,14 +194,24 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
 
     return (
         <div 
-            className="fixed inset-0 z-[100] bg-app-bg flex items-center justify-center overflow-hidden font-mono cursor-pointer"
-            onClick={onFinish} // Tap anywhere to skip
+            className="fixed inset-0 z-[100] bg-app-bg flex items-center justify-center overflow-hidden font-mono cursor-pointer transition-colors duration-1000"
+            onClick={onFinish}
         >
-            
-            {/* Background Grid */}
-            <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-                 <div className="absolute w-full h-full bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-                 <div className="absolute inset-0 bg-gradient-to-t from-app-bg via-transparent to-app-bg"></div>
+            {/* 3D Scene Layer */}
+            <div className="absolute inset-0 z-0">
+                <Canvas>
+                    <PerspectiveCamera makeDefault position={[0, 0, 8]} />
+                    <ambientLight intensity={0.5} />
+                    <pointLight position={[10, 10, 10]} intensity={1} />
+                    <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+                    
+                    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                        {phase === 0 && <BiomassParticles />}
+                        {phase === 1 && <ScannerCube />}
+                        {phase === 2 && <TerrainMesh />}
+                        {phase === 3 && <SatelliteGlobe />}
+                    </Float>
+                </Canvas>
             </div>
 
             {/* Skip Text */}
@@ -48,90 +219,70 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                 Toque para pular
             </div>
 
-            {/* Fase 0: Cultura */}
-            <div className={`absolute transition-all duration-1000 transform flex flex-col items-center justify-center z-10 ${phase === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-150 pointer-events-none blur-sm'}`}>
-                 <div className="relative">
-                    <div className="absolute inset-0 bg-app-accent/20 blur-[50px] rounded-full animate-pulse"></div>
-                    
-                    <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-app-text drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] relative z-10">
-                        <path d="M12 22v-8" className="animate-[growHeight_1.5s_ease-out_forwards] origin-bottom stroke-2" />
-                        <path d="M12 18a5 5 0 0 0 5-5v-5" className="animate-[growCurveRight_1.5s_ease-out_0.5s_forwards] opacity-0" />
-                        <path d="M12 18a5 5 0 0 1-5-5v-5" className="animate-[growCurveLeft_1.5s_ease-out_0.7s_forwards] opacity-0" />
-                        <path d="M12 14l-2-2" className="animate-[fadeIn_0.5s_ease-out_1s_forwards] opacity-0 fill-white/10" />
-                        <path d="M12 14l2-2" className="animate-[fadeIn_0.5s_ease-out_1.2s_forwards] opacity-0 fill-white/10" />
-                    </svg>
-                 </div>
-                 <div className="mt-8 flex flex-col items-center gap-2">
-                    <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-app-accent to-transparent"></div>
-                    <p className="text-[10px] tracking-[0.5em] text-app-muted uppercase animate-pulse">Detectando Biomassa</p>
-                 </div>
-            </div>
-
-            {/* Fase 1: Scanner */}
-            <div className={`absolute transition-all duration-700 transform w-full h-full flex items-center justify-center z-10 ${phase === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
-                <div className="relative w-72 h-[450px] border border-app-border rounded-3xl flex items-center justify-center overflow-hidden bg-app-card/30 backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                    
-                    <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-app-text/80"></div>
-                    <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-app-text/80"></div>
-                    <div className="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-app-text/80"></div>
-                    <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-app-text/80"></div>
-                    
-                    <div className="absolute inset-x-0 h-[2px] bg-app-accent shadow-[0_0_20px_var(--app-accent)] animate-[scanDown_2s_linear_infinite] z-20"></div>
-                    
-                    <CameraIcon className="w-16 h-16 text-app-text/50 animate-pulse" />
-                    
-                    <div className="absolute bottom-12 flex flex-col items-center">
-                        <p className="text-[10px] font-bold text-app-accent bg-app-accent/10 px-3 py-1 rounded border border-app-accent/30 animate-pulse">
-                            ANALISANDO ESPECTRO
-                        </p>
-                    </div>
+            {/* Overlay UI Layer */}
+            <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none w-full max-w-md text-center p-6">
+                
+                {/* Phase 0 Text */}
+                <div className={`transition-all duration-700 absolute ${phase === 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                     <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
+                        <div className="flex flex-col items-center gap-2">
+                             <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+                                <SparkleIcon className="w-6 h-6 text-green-400" />
+                             </div>
+                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Biomassa</h2>
+                             <div className="h-[1px] w-12 bg-green-500/50 my-1"></div>
+                             <p className="text-[10px] text-green-300 uppercase tracking-[0.3em] animate-pulse">Detectando Vida</p>
+                        </div>
+                     </div>
                 </div>
-            </div>
 
-            {/* Fase 2: Mapa */}
-            <div className={`absolute transition-all duration-700 transform w-full h-full flex items-center justify-center z-10 ${phase === 2 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <div className="relative perspective-[1000px] w-full h-full flex items-center justify-center overflow-hidden">
-                    <div className="absolute w-[200%] h-[200%] bg-[linear-gradient(to_right,#333_1px,transparent_1px),linear-gradient(to_bottom,#333_1px,transparent_1px)] bg-[size:60px_60px] [transform:rotateX(75deg)_translateY(-20%)] animate-[scrollGrid_10s_linear_infinite] opacity-30"></div>
-                    
-                    <div className="relative z-10 flex flex-col items-center">
-                         <div className="relative mb-6">
-                            <MapPinIcon className="w-12 h-12 text-app-text drop-shadow-[0_0_15px_white] animate-bounce" />
-                         </div>
-                         
-                         <div className="bg-app-card/80 backdrop-blur border border-app-border px-4 py-2 rounded-full flex items-center gap-3">
-                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                             <p className="text-xs tracking-widest text-app-muted">MAPEANDO TERRENO</p>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Fase 3: Satélite */}
-            <div className={`absolute transition-all duration-1000 transform flex flex-col items-center justify-center z-10 ${phase === 3 ? 'opacity-100 scale-100' : 'opacity-0 scale-110 pointer-events-none'}`}>
-                <div className="relative mb-10">
-                    <div className="absolute inset-0 border border-dashed border-app-border rounded-full animate-[spin_20s_linear_infinite] w-64 h-64 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2"></div>
-                    
-                    <div className="relative w-32 h-32 bg-app-bg rounded-full border border-app-border flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)] z-20 overflow-hidden">
-                         <GlobeIcon className="w-32 h-32 text-app-card absolute opacity-50 animate-[spin_30s_linear_infinite]" />
-                         <SparkleIcon className="w-12 h-12 text-app-accent z-30 animate-[pulse_3s_ease-in-out_infinite]" />
+                {/* Phase 1 Text */}
+                <div className={`transition-all duration-700 absolute ${phase === 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
+                         <div className="flex flex-col items-center gap-2">
+                             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
+                                <CameraIcon className="w-6 h-6 text-blue-400" />
+                             </div>
+                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Scanner IA</h2>
+                             <div className="h-[1px] w-12 bg-blue-500/50 my-1"></div>
+                             <p className="text-[10px] text-blue-300 uppercase tracking-[0.3em] animate-pulse">Analisando Espectro</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="text-center overflow-hidden">
-                    <h1 className="text-5xl font-light text-app-text tracking-tighter animate-[slideUp_0.8s_ease-out_forwards]">
-                        AGRO<span className="font-bold">CONECTA</span>
-                    </h1>
+                {/* Phase 2 Text */}
+                <div className={`transition-all duration-700 absolute ${phase === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
+                         <div className="flex flex-col items-center gap-2">
+                             <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-2">
+                                <MapPinIcon className="w-6 h-6 text-orange-400" />
+                             </div>
+                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Topografia</h2>
+                             <div className="h-[1px] w-12 bg-orange-500/50 my-1"></div>
+                             <p className="text-[10px] text-orange-300 uppercase tracking-[0.3em] animate-pulse">Mapeando Terreno</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <style>{`
-                @keyframes growHeight { from { stroke-dasharray: 20; stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
-                @keyframes growCurveRight { from { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
-                @keyframes growCurveLeft { from { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
-                @keyframes scanDown { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-                @keyframes scrollGrid { from { background-position: 0 0; } to { background-position: 0 60px; } }
-                @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-            `}</style>
+                {/* Phase 3 Text */}
+                <div className={`transition-all duration-700 absolute ${phase === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    <div className="bg-app-card/60 backdrop-blur-md p-6 rounded-3xl border border-app-border/30 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                        <div className="flex flex-col items-center gap-4">
+                             <div className="relative">
+                                <GlobeIcon className="w-16 h-16 text-white opacity-80" />
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-black animate-pulse"></div>
+                             </div>
+                             <div>
+                                <h1 className="text-4xl font-light text-white tracking-tighter">
+                                    AGRO<span className="font-bold">CONECTA</span>
+                                </h1>
+                                <p className="text-[10px] text-zinc-400 uppercase tracking-[0.5em] mt-2">Sistema Conectado</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     );
 };
