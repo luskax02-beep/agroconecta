@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, PerspectiveCamera, Html, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { analyzeTerrain } from '../services/geminiService';
@@ -77,7 +77,8 @@ const TerrainMesh = ({ isScanning, roughness, landmarks }: { isScanning: boolean
         if (meshRef.current) {
             meshRef.current.rotation.z += 0.0005;
             if (isScanning) {
-                 const scale = 1 + Math.sin(state.clock.getElapsedTime() * 5) * 0.005;
+                 // Subtle pulse during scan
+                 const scale = 1 + Math.sin(state.clock.getElapsedTime() * 3) * 0.002;
                  meshRef.current.scale.set(scale, scale, 1);
             }
         }
@@ -87,12 +88,12 @@ const TerrainMesh = ({ isScanning, roughness, landmarks }: { isScanning: boolean
         <group rotation={[-Math.PI / 2, 0, 0]}>
             <mesh ref={meshRef} geometry={geometry}>
                 <meshStandardMaterial 
-                    color={isScanning ? "#a1a1aa" : "#52525b"} // Zinc colors
+                    color={isScanning ? "#52525b" : "#52525b"} 
                     wireframe={true} 
                     transparent 
-                    opacity={0.3}
+                    opacity={isScanning ? 0.1 : 0.3} // Less visible when scanning particles are active
                     emissive={isScanning ? "#ffffff" : "#000000"}
-                    emissiveIntensity={isScanning ? 0.2 : 0}
+                    emissiveIntensity={isScanning ? 0.1 : 0}
                 />
             </mesh>
             
@@ -118,6 +119,111 @@ const TerrainMesh = ({ isScanning, roughness, landmarks }: { isScanning: boolean
                 infiniteGrid 
             />
         </group>
+    );
+};
+
+const ScanningParticles = ({ isScanning }: { isScanning: boolean }) => {
+    const mesh = useRef<THREE.Points>(null!);
+    const count = 3000;
+    
+    // Create a virtual plane for mouse intersection (XZ plane at y=0)
+    const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+    const target = useMemo(() => new THREE.Vector3(), []);
+    
+    // Initialize particles with random positions and velocities
+    const particles = useMemo(() => {
+        const data = [];
+        for(let i=0; i<count; i++) {
+            const x = (Math.random() - 0.5) * 50;
+            const z = (Math.random() - 0.5) * 50;
+            const y = Math.random() * 15; // Floating volume above terrain
+            data.push({
+                x, y, z,
+                ox: x, oy: y, oz: z, // Original positions
+                speed: Math.random() * 0.02 + 0.01,
+                offset: Math.random() * 100
+            });
+        }
+        return data;
+    }, []);
+
+    const positions = useMemo(() => new Float32Array(count * 3), [count]);
+
+    useFrame((state) => {
+        if (!mesh.current) return;
+
+        // Interactive Mouse Logic
+        // Raycast from camera to the virtual plane to get a world position for the cursor
+        state.raycaster.setFromCamera(state.mouse, state.camera);
+        const intersect = state.raycaster.ray.intersectPlane(plane, target);
+        
+        const time = state.clock.getElapsedTime();
+
+        for(let i=0; i<count; i++) {
+            const p = particles[i];
+            
+            // 1. Base Organic Motion (Flowing)
+            // Use sin/cos to create a floating wave effect
+            let tx = p.ox + Math.sin(time * p.speed + p.offset) * 2;
+            let ty = p.oy + Math.cos(time * p.speed + p.offset) * 1;
+            let tz = p.oz;
+
+            // 2. Scan Line Effect (When loading)
+            // A bar of raised particles moving across Z axis
+            if (isScanning) {
+                 const scanSpeed = 10;
+                 const scanZ = (time * scanSpeed) % 80 - 40; // Moves from -40 to 40
+                 const distToScan = Math.abs(p.oz - scanZ);
+                 
+                 if (distToScan < 5) {
+                     // Lift particles near the scan line
+                     const lift = (5 - distToScan) * 0.5;
+                     ty += lift;
+                 }
+            }
+
+            // 3. Mouse Interaction (Repulsion/Attraction)
+            if (intersect) {
+                const dx = tx - target.x;
+                const dz = tz - target.z;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                const radius = 10;
+
+                if (dist < radius) {
+                    const force = (radius - dist) / radius;
+                    // Displace particles away from cursor and up
+                    const angle = Math.atan2(dz, dx);
+                    tx += Math.cos(angle) * force * 2;
+                    tz += Math.sin(angle) * force * 2;
+                    ty += force * 3; // Levitate
+                }
+            }
+            
+            positions[i*3] = tx;
+            positions[i*3+1] = ty;
+            positions[i*3+2] = tz;
+        }
+        
+        mesh.current.geometry.attributes.position.needsUpdate = true;
+        
+        // Slowly rotate the entire system
+        mesh.current.rotation.y = time * 0.05;
+    });
+
+    return (
+        <points ref={mesh}>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+            </bufferGeometry>
+            <pointsMaterial 
+                size={0.12} 
+                color={isScanning ? "#ffffff" : "#a1a1aa"} 
+                transparent 
+                opacity={isScanning ? 0.8 : 0.4} 
+                sizeAttenuation 
+                blending={THREE.AdditiveBlending}
+            />
+        </points>
     );
 };
 
@@ -258,25 +364,31 @@ const AgroMap3D: React.FC<AgroMap3DProps> = ({ isOpen, onClose }) => {
                             <div className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">SYSTEM STATUS</div>
                             <div className="text-white font-bold flex items-center gap-2 text-xs">
                                 <span className={`w-2 h-2 rounded-full ${loading ? 'bg-zinc-400 animate-pulse' : 'bg-white shadow-[0_0_8px_white]'}`}></span>
-                                {loading ? 'PROCESSING...' : 'ONLINE'}
+                                {loading ? 'SCANNING...' : 'ONLINE'}
                             </div>
                         </div>
                     </div>
 
                     {viewMode === '3d' ? (
                         <Canvas>
-                            <PerspectiveCamera makeDefault position={[0, 15, 20]} fov={45} />
+                            <PerspectiveCamera makeDefault position={[0, 20, 30]} fov={45} />
                             <color attach="background" args={['#000000']} />
-                            <fog attach="fog" args={['#000000', 10, 60]} />
+                            <fog attach="fog" args={['#000000', 10, 80]} />
+                            
                             <ambientLight intensity={0.5} />
                             <pointLight position={[10, 20, 10]} intensity={2} color="#ffffff" />
+                            
                             <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+                            
+                            <ScanningParticles isScanning={loading} />
+                            
                             <TerrainMesh 
                                 isScanning={loading} 
-                                roughness={data ? data.roughness : 0.1} 
+                                roughness={data ? data.roughness : 0.2} 
                                 landmarks={data ? data.landmarks : []}
                             />
-                            <OrbitControls autoRotate={!data} autoRotateSpeed={0.5} minDistance={10} maxDistance={40} />
+                            
+                            <OrbitControls autoRotate={loading} autoRotateSpeed={2} minDistance={10} maxDistance={60} />
                         </Canvas>
                     ) : (
                         <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative">

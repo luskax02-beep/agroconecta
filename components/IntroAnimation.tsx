@@ -37,9 +37,10 @@ const BiomassParticles = () => {
 
     useFrame((state) => {
         if (mesh.current) {
-            mesh.current.rotation.y = state.clock.getElapsedTime() * 0.2;
-            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.1;
-            const s = 1 + Math.sin(state.clock.getElapsedTime() * 2) * 0.1;
+            // Slower rotation for a calmer effect
+            mesh.current.rotation.y = state.clock.getElapsedTime() * 0.15;
+            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.08;
+            const s = 1 + Math.sin(state.clock.getElapsedTime() * 1.5) * 0.1;
             mesh.current.scale.set(s, s, s);
         }
     });
@@ -61,11 +62,13 @@ const ScannerCube = () => {
 
     useFrame((state) => {
         if (group.current) {
-            group.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.5) * 0.2;
-            group.current.rotation.y += 0.01;
+            // Slower rotation
+            group.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.4) * 0.15;
+            group.current.rotation.y += 0.008;
         }
         if (scanLine.current) {
-            scanLine.current.position.y = Math.sin(state.clock.getElapsedTime() * 2) * 1.5;
+            // Slower scan line movement
+            scanLine.current.position.y = Math.sin(state.clock.getElapsedTime() * 1.5) * 1.5;
         }
     });
 
@@ -89,7 +92,6 @@ const ScannerCube = () => {
                     <planeGeometry args={[0.5, 0.05]} />
                     <meshBasicMaterial color="white" />
                  </mesh>
-                 {/* ... other corners implied for visual simplicity or add more meshes */}
             </group>
         </group>
     );
@@ -100,7 +102,7 @@ const TerrainMesh = () => {
     
     useFrame((state) => {
         if(mesh.current) {
-            mesh.current.rotation.z += 0.002;
+            mesh.current.rotation.z += 0.0015; // Slightly slower
         }
     });
 
@@ -135,7 +137,7 @@ const SatelliteGlobe = () => {
     
     useFrame((state) => {
         if (group.current) {
-             group.current.rotation.y += 0.005;
+             group.current.rotation.y += 0.004; // Slightly slower
         }
     });
 
@@ -174,7 +176,12 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
     const [phase, setPhase] = useState(0); 
 
     useEffect(() => {
-        const timings = [0, 2500, 5000, 7500, 10000];
+        // Timings ajustados para garantir leitura:
+        // Phase 0: 0 -> 3500 (3.5s)
+        // Phase 1: 3500 -> 7000 (3.5s)
+        // Phase 2: 7000 -> 10500 (3.5s)
+        // Phase 3 (Logo): 10500 -> 18500 (8.0s) - Estendido significativamente
+        const timings = [0, 3500, 7000, 10500, 18500];
         
         const timeouts = timings.map((time, index) => {
             if (index === 0) return null;
@@ -205,7 +212,8 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                     <pointLight position={[10, 10, 10]} intensity={1} />
                     <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
                     
-                    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                    {/* Slower float speed */}
+                    <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.4}>
                         {phase === 0 && <BiomassParticles />}
                         {phase === 1 && <ScannerCube />}
                         {phase === 2 && <TerrainMesh />}
@@ -219,11 +227,11 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                 Toque para pular
             </div>
 
-            {/* Overlay UI Layer */}
+            {/* Overlay UI Layer - slower transitions (duration-1000) */}
             <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none w-full max-w-md text-center p-6">
                 
                 {/* Phase 0 Text */}
-                <div className={`transition-all duration-700 absolute ${phase === 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className={`transition-all duration-1000 absolute ${phase === 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                      <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
                         <div className="flex flex-col items-center gap-2">
                              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
@@ -237,7 +245,7 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                 </div>
 
                 {/* Phase 1 Text */}
-                <div className={`transition-all duration-700 absolute ${phase === 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className={`transition-all duration-1000 absolute ${phase === 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                     <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
                          <div className="flex flex-col items-center gap-2">
                              <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
@@ -251,7 +259,7 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                 </div>
 
                 {/* Phase 2 Text */}
-                <div className={`transition-all duration-700 absolute ${phase === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className={`transition-all duration-1000 absolute ${phase === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                     <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
                          <div className="flex flex-col items-center gap-2">
                              <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-2">
@@ -265,7 +273,7 @@ const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
                 </div>
 
                 {/* Phase 3 Text */}
-                <div className={`transition-all duration-700 absolute ${phase === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className={`transition-all duration-1000 absolute ${phase === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                     <div className="bg-app-card/60 backdrop-blur-md p-6 rounded-3xl border border-app-border/30 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
                         <div className="flex flex-col items-center gap-4">
                              <div className="relative">

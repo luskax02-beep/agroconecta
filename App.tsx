@@ -232,7 +232,24 @@ export default function App() {
                     <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow w-full max-w-5xl z-10 relative pointer-events-none">
                         {!previewUrl && (
                             canAnalyze ? (
-                                <div className="w-full py-16">
+                                <div className="w-full flex flex-col items-center py-10">
+                                    {/* Glass Welcome Badge - New Feature */}
+                                    <div className="mb-8 pointer-events-auto animate-fade-in-up">
+                                        <div className="relative bg-app-card/30 backdrop-blur-md border border-app-border/50 px-10 py-3 rounded-full flex items-center gap-4 shadow-lg overflow-hidden group hover:border-app-accent/30 transition-all duration-300">
+                                            {/* Subtle Shine Effect */}
+                                            <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-app-accent/10 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
+                                            
+                                            <span className="relative flex h-2 w-2">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            </span>
+                                            
+                                            <span className="text-xs font-mono text-app-text/80 uppercase tracking-widest relative z-10">
+                                                Bem-vindo, {userProfile.farmName ? userProfile.farmName.split(' ')[0] : 'Produtor'}
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <ImageSelector 
                                         onImageSelect={handleImageSelect} 
                                         disabled={loading} 
