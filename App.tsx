@@ -21,6 +21,7 @@ import IntroAnimation from './components/IntroAnimation';
 import LoginScreen from './components/LoginScreen';
 import ImageSelector from './components/ImageSelector';
 import AnalysisDisplay from './components/AnalysisDisplay';
+import SpeedInsightsWrapper from './components/SpeedInsights';
 
 const FREE_PROMPT_LIMIT = 3;
 
@@ -328,6 +329,8 @@ export default function App() {
                         currentTheme={theme}
                         onThemeChange={handleThemeChange}
                     />
+                    
+                    <SpeedInsightsWrapper />
                 </>
             )}
         </div>
