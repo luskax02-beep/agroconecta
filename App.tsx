@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { analyzeCrop } from './services/geminiService';
 import { db } from './services/databaseService';
 import { AnalysisResult, UserProfile as UserProfileType } from './types';
@@ -175,6 +176,7 @@ export default function App() {
     return (
         <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-text selection:text-app-bg overflow-x-hidden ${theme === 'green' ? 'theme-green' : ''}`}>
             <Background3D theme={theme} />
+            <Analytics />
             
             {showIntro ? (
                 <IntroAnimation onFinish={() => setShowIntro(false)} />
