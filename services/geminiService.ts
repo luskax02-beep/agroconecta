@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { GroundingChunk, AnalysisResult, TerrainAnalysis } from '../types';
 
@@ -20,25 +21,68 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
     const imageAnalysisPromise = async () => {
         const imagePart = await fileToGenerativePart(imageFile);
         
-        // Strict, structured output prompt
+        // Novo prompt "Motor de Diagnóstico Fitossanitário AgroConecta" com Ground Truth Sources
+        // LINK DE REFERÊNCIA REMOVIDO DO OUTPUT
         const prompt = `
-            Atue como um agrônomo sênior especialista em fitopatologia. Analise esta imagem de uma cultura agrícola.
-            
-            Retorne APENAS as informações técnicas nos tópicos abaixo, formatados rigorosamente em Markdown. Não use frases de introdução (como "Aqui está a análise") ou conclusão. Seja direto e objetivo.
+            Papel: Você é o motor de diagnóstico fitossanitário do AgroConecta. Sua função é analisar dados de campo e imagens para identificar anormalidades, utilizando bases de dados científicas como "Ground Truth" (Verdade Absoluta).
+
+            REFERÊNCIAS OBRIGATÓRIAS (GROUND TRUTH):
+            Utilize os padrões visuais e metadados destas bases para validar sua análise:
+            1. Repositórios de Treinamento (Comparação Visual):
+               - PlantVillage Dataset (Kaggle/GitHub): Padrão ouro para folhas e manchas (14 culturas/26 doenças).
+               - Rice-Disease-Dataset: Prioridade se a cultura for Arroz (Mancha-parda, Brusone).
+               - Coffee Leaf Dataset: Prioridade se a cultura for Café (Ferrugem, Bicho-mineiro).
+               - AI4Agriculture: Para padrões de detecção em tempo real.
+            2. Bases Científicas (Metadados e Taxonomia):
+               - CABI Plantwise / EPPO Global Database: Para nomenclatura oficial e distribuição.
+               - Invasive.org (USDA): Para comparação com imagens de alta definição.
+            3. Filtro Geográfico (Brasil):
+               - Agrofit (MAPA) e Embrapa (Ageitec): Para confirmar ocorrência e registro no Brasil.
+
+            ETAPA 1: PROCESSAMENTO DA FICHA DE ANAMNESE (Inferência Visual)
+            Cruze os dados visuais para deduzir Hospedeiro, Ambiente, Manejo e Tempo de evolução.
+
+            ETAPA 2: PROTOCOLO DE ANÁLISE VISUAL
+            Analise buscando:
+            1. Contexto: Padrão de distribuição (reboleira vs uniforme).
+            2. Sintoma: Compare morfologia da lesão com o dataset 'PlantVillage' ou específico da cultura.
+            3. Sinais: Busque estruturas reprodutivas (esporos/micélios).
+
+            ETAPA 3: LÓGICA DE DIAGNÓSTICO DIFERENCIAL (Triagem de Exclusão)
+            - Sintoma Visual vs. Sinal Físico.
+            - Análise de Localização (Localizado vs Sistêmico).
+            - Filtro de Probabilidade: O patógeno existe no Brasil (Check Agrofit)? Se não, reduza a confiança drasticamente, salvo se for praga quarentenária.
+
+            ETAPA 4: VALIDAÇÃO TÉCNICA (Cruzamento de Dados)
+            - Confirme o nome científico oficial (EPPO/CABI).
+            - Indique qual base de dados (dataset) melhor corresponde aos sintomas visuais.
+
+            ETAPA 5: ESTRUTURA DO RELATÓRIO DE SAÍDA
+            Sua resposta deve ser estruturada ESTRITAMENTE com os cabeçalhos Markdown abaixo:
 
             ## 🔍 Diagnóstico
-            [Nome científico e comum da praga, doença ou deficiência. Se a planta estiver saudável, informe apenas "Planta Saudável".]
+            [Diagnóstico Principal: Nome comum e científico]
+            [Nível de Confiança: (0% a 100%)]
+
+            ## 🌍 Validação Oficial (Ground Truth)
+            [Base de Referência Visual: PlantVillage / Coffee Dataset / Rice Dataset / etc.]
+            [Status no Brasil (Agrofit/MAPA): Presente / Ausente / Quarentenária]
 
             ## 📝 Sintomas Identificados
-            [Liste os sintomas visuais observados na imagem de forma objetiva]
+            [Justificativa Técnica: Explique a morfologia observada e correlação com a base de referência.]
+
+            ## 🔬 Diagnóstico Diferencial
+            [Diferencial de Segurança: Quais doenças similares do 'PlantVillage' ou 'Agrofit' foram descartadas e por quê?]
 
             ## 💊 Tratamento Recomendado
-            [Liste defensivos químicos (princípios ativos), biológicos ou métodos culturais recomendados para controle imediato]
+            [Sugestão de Manejo: Medidas culturais e princípios ativos registrados no Agrofit. Cite SEMPRE a necessidade de Receituário Agronômico.]
 
             ## 🛡️ Medidas Preventivas
-            [Dicas para evitar reincidência]
+            [Estratégias para evitar reincidência.]
 
-            Se a imagem não for de uma planta ou cultura agrícola, responda apenas: "Imagem inválida: Não foi possível identificar uma cultura agrícola."
+            DIRETRIZES DE SEGURANÇA
+            - Inconclusividade: Se o sintoma for dúbio, declare "Dados insuficientes".
+            - Foco em Plantas: Se não for cultura agrícola, responda: "Imagem inválida: Não foi possível identificar uma cultura agrícola."
         `;
         
         const response = await ai.models.generateContent({
