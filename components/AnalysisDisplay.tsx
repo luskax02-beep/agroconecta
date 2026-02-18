@@ -42,6 +42,16 @@ const parseAnalysis = (markdown: string) => {
     return sections;
 };
 
+// Helper to render bold text from markdown style **text**
+const formatText = (text: string) => {
+    return text.split(/(\*\*.*?\*\*)/g).map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+        }
+        return part;
+    });
+};
+
 const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     const parsed = parseAnalysis(result.diagnosis);
 
@@ -62,10 +72,10 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 <div className="p-8 relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-app-accent/10 rounded-full blur-[50px] pointer-events-none"></div>
                     <h3 className="flex items-center text-xs font-bold uppercase tracking-[0.2em] mb-4 border-b border-white/10 pb-4 text-app-accent">
-                        <span className="text-lg mr-3">🔍</span> Diagnóstico
+                        <span className="text-lg mr-3">🔍</span> Identificação e Confiança
                     </h3>
-                    <div className="text-3xl font-light leading-relaxed whitespace-pre-line text-white tracking-tight">
-                        {parsed.diagnosis}
+                    <div className="text-xl font-light leading-relaxed whitespace-pre-line text-zinc-200 tracking-tight">
+                        {formatText(parsed.diagnosis)}
                     </div>
                 </div>
             </div>
@@ -79,7 +89,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                         Ground Truth & Validação
                     </h3>
                     <div className="text-emerald-100/90 leading-relaxed font-light whitespace-pre-line relative z-10 text-sm">
-                        {parsed.validation}
+                        {formatText(parsed.validation)}
                     </div>
                 </div>
             )}
@@ -88,7 +98,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 {/* Symptoms - Card */}
                 <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '150ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
-                        <span className="text-lg mr-3 text-white">📝</span> Sintomas
+                        <span className="text-lg mr-3 text-white">📝</span> Evidências Encontradas
                     </h3>
                     <ul className="space-y-4">
                         {parsed.symptoms.split('\n').map((line, i) => {
@@ -97,7 +107,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                             return (
                                 <li key={i} className="flex items-start text-zinc-200">
                                     <span className="mr-3 mt-2 w-1.5 h-1.5 bg-app-accent rounded-full shadow-[0_0_8px_var(--app-accent)] flex-shrink-0"></span>
-                                    <span className="leading-relaxed font-light text-sm">{cleanLine}</span>
+                                    <span className="leading-relaxed font-light text-sm">{formatText(cleanLine)}</span>
                                 </li>
                             );
                         })}
@@ -107,7 +117,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 {/* Prevention - Card */}
                 <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '300ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
-                        <span className="text-lg mr-3 text-white">🛡️</span> Protocolos
+                        <span className="text-lg mr-3 text-white">🛡️</span> Prevenção
                     </h3>
                     <ul className="space-y-4">
                         {parsed.prevention.split('\n').map((line, i) => {
@@ -118,7 +128,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                                     <div className="mr-3 mt-1 text-app-accent">
                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                     </div>
-                                    <span className="leading-relaxed font-light text-sm">{cleanLine}</span>
+                                    <span className="leading-relaxed font-light text-sm">{formatText(cleanLine)}</span>
                                 </li>
                             );
                         })}
@@ -131,19 +141,19 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-yellow-500/10 p-6 animate-fade-in-up transition-all hover:border-yellow-500/20 group relative overflow-hidden" style={{animationDelay: '400ms'}}>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
                     <h3 className="flex items-center text-yellow-500/80 font-mono text-[10px] uppercase tracking-widest mb-6 relative z-10">
-                        <span className="text-lg mr-3 text-yellow-500">🔬</span> Filtro de Erros (Diagnóstico Diferencial)
+                        <span className="text-lg mr-3 text-yellow-500">🔬</span> Diagnóstico Diferencial
                     </h3>
                     <div className="text-zinc-300 leading-relaxed font-light whitespace-pre-line relative z-10 text-sm">
-                        {parsed.differential}
+                        {formatText(parsed.differential)}
                     </div>
                 </div>
             )}
 
-             {/* Treatment */}
+             {/* Treatment (Plano de Ação) */}
             <div className="bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 animate-fade-in-up transition-all hover:bg-white/10" style={{animationDelay: '500ms'}}>
                 <div className="p-8">
                      <h3 className="flex items-center text-xl font-light text-white mb-6">
-                        <span className="text-2xl mr-4">💊</span> Tratamento
+                        <span className="text-2xl mr-4">💊</span> Plano de Ação
                     </h3>
                     <div className="grid gap-3">
                          {parsed.treatment.split('\n').map((line, i) => {
@@ -152,7 +162,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                             return (
                                 <div key={i} className="flex items-center bg-black/20 p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">
                                     <span className="text-app-accent mr-4 text-xl font-thin">|</span>
-                                    <span className="text-zinc-200 leading-relaxed font-light text-sm">{cleanLine}</span>
+                                    <span className="text-zinc-200 leading-relaxed font-light text-sm">{formatText(cleanLine)}</span>
                                 </div>
                             );
                         })}
