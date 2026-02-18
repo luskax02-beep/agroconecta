@@ -7,7 +7,6 @@ import GlobeIcon from './icons/GlobeIcon';
 const parseAnalysis = (markdown: string) => {
     const sections = {
         diagnosis: '',
-        validation: '',
         symptoms: '',
         differential: '',
         treatment: '',
@@ -16,20 +15,13 @@ const parseAnalysis = (markdown: string) => {
     };
 
     const diagnosisMatch = markdown.match(/## 🔍 Diagnóstico\s*([\s\S]*?)(?=##|$)/);
-    // Updated Regex to match the new header logic flexibly
-    const validationMatch = markdown.match(/## 🌍 Validação Oficial( \(Ground Truth\))?\s*([\s\S]*?)(?=##|$)/);
+    // REMOVIDO: Regex de Validação Oficial (Ground Truth)
     const symptomsMatch = markdown.match(/## 📝 Sintomas Identificados\s*([\s\S]*?)(?=##|$)/);
     const differentialMatch = markdown.match(/## 🔬 Diagnóstico Diferencial\s*([\s\S]*?)(?=##|$)/);
     const treatmentMatch = markdown.match(/## 💊 Tratamento Recomendado\s*([\s\S]*?)(?=##|$)/);
     const preventionMatch = markdown.match(/## 🛡️ Medidas Preventivas\s*([\s\S]*?)(?=##|$)/);
 
     if (diagnosisMatch) sections.diagnosis = diagnosisMatch[1].trim();
-    if (validationMatch) {
-        // Extra cleaning step to remove any reference links that might sneak in
-        let valText = validationMatch[2] ? validationMatch[2].trim() : validationMatch[1].trim();
-        valText = valText.split('\n').filter(line => !line.toLowerCase().includes('link de referência') && !line.toLowerCase().includes('http')).join('\n');
-        sections.validation = valText;
-    }
     if (symptomsMatch) sections.symptoms = symptomsMatch[1].trim();
     if (differentialMatch) sections.differential = differentialMatch[1].trim();
     if (treatmentMatch) sections.treatment = treatmentMatch[1].trim();
@@ -80,19 +72,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 </div>
             </div>
 
-            {/* Official Validation - Ground Truth Card */}
-            {parsed.validation && (
-                <div className="bg-emerald-950/20 backdrop-blur-2xl rounded-3xl border border-emerald-500/20 p-6 animate-fade-in-up transition-all relative overflow-hidden group hover:bg-emerald-950/30" style={{animationDelay: '100ms'}}>
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
-                    <h3 className="flex items-center text-emerald-400 font-mono text-[10px] uppercase tracking-widest mb-4 relative z-10">
-                        <GlobeIcon className="w-4 h-4 mr-2" />
-                        Ground Truth & Validação
-                    </h3>
-                    <div className="text-emerald-100/90 leading-relaxed font-light whitespace-pre-line relative z-10 text-sm">
-                        {formatText(parsed.validation)}
-                    </div>
-                </div>
-            )}
+            {/* REMOVIDO: Official Validation - Ground Truth Card */}
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Symptoms - Card */}
@@ -170,41 +150,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 </div>
             </div>
 
-            {/* Stores Section */}
-            <div className="bg-gradient-to-br from-black/40 to-black/20 backdrop-blur-2xl rounded-3xl p-8 border border-white/10 animate-fade-in-up shadow-lg" style={{animationDelay: '600ms'}}>
-                <h3 className="text-lg font-light text-white mb-6 flex items-center">
-                    <div className="p-2 bg-white text-black rounded-lg mr-4 shadow-glow-sm">
-                        <MapPinIcon className="w-5 h-5" />
-                    </div>
-                    Parceiros & Logística
-                </h3>
-                <p className="text-zinc-400 mb-6 text-sm leading-relaxed border-l border-white/10 pl-4 font-light">
-                    {result.stores}
-                </p>
-                <div className="grid sm:grid-cols-2 gap-4">
-                    {result.groundingChunks?.map((chunk, index) => (
-                        chunk.maps && (
-                            <a
-                                key={index}
-                                href={chunk.maps.uri}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/20 hover:bg-white/10 transition-all duration-300"
-                            >
-                                <div className="bg-black/40 p-2 rounded-lg mr-4 group-hover:bg-white group-hover:text-black transition-colors text-white border border-white/10">
-                                     <MapPinIcon className="w-4 h-4" />
-                                </div>
-                                <span className="text-zinc-300 font-medium group-hover:text-white transition-colors flex-1 text-sm">
-                                    {chunk.maps.title}
-                                </span>
-                                <svg className="w-4 h-4 text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </a>
-                        )
-                    ))}
-                </div>
-            </div>
+            {/* REMOVIDO: Stores Section (Parceiros & Logística) */}
         </div>
     );
 };

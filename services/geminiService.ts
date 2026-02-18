@@ -21,9 +21,10 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
     const imageAnalysisPromise = async () => {
         const imagePart = await fileToGenerativePart(imageFile);
         
-        // Novo prompt "Motor de Diagnóstico Fitossanitário AgroConecta" com Estrutura Obrigatória Atualizada
+        // Novo prompt "Motor de Diagnóstico Fitossanitário AgroConecta"
+        // REMOVIDO: Seção de Validação Oficial (Ground Truth) do output solicitado
         const prompt = `
-            Papel: Você é o motor de diagnóstico fitossanitário do AgroConecta. Sua função é analisar a imagem fornecida para identificar anormalidades, utilizando bases de dados científicas como "Ground Truth".
+            Papel: Você é o motor de diagnóstico fitossanitário do AgroConecta. Sua função é analisar a imagem fornecida para identificar anormalidades, utilizando bases de dados científicas como "Ground Truth" internamente para garantir precisão, mas gerando um relatório direto para o produtor.
 
             TONE OF VOICE (Tom de Voz):
             - Profissional, porém acessível.
@@ -40,10 +41,6 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
             **Probabilidade:** [Barra de Progresso ou % de Confiança]
             **Data da Análise:** ${new Date().toLocaleDateString('pt-BR')}
             *(Se confiança < 70%, adicione: "Atenção: Diagnóstico inconclusivo. Sugerimos coleta de amostra para laboratório.")*
-
-            ## 🌍 Validação Oficial (Ground Truth)
-            **Base de Referência:** [PlantVillage / CABI / EPPO / etc.]
-            **Status no Brasil:** [Presente/Ausente/Quarentenária - via Agrofit]
 
             ## 📝 Sintomas Identificados
             **Sintoma Visual:** [Descreva brevemente o que foi visto na imagem (ex: manchas, halos)]
@@ -75,40 +72,14 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
         return response.text || "Não foi possível gerar a análise.";
     };
 
-    // Task 2: Find nearby stores using Maps Grounding based on user location
-    const findStoresPromise = async () => {
-        const locationQuery = userLocation && userLocation.trim() !== '' 
-            ? `perto de ${userLocation}` 
-            : "próximas a minha localização atual";
+    // REMOVIDO: Busca de lojas (findStoresPromise) conforme solicitado para retirar "Parceiros & Logística"
 
-        const prompt = `Liste casas agropecuárias ${locationQuery}.`;
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                tools: [{googleMaps: {}}],
-            },
-        });
-
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        
-        // Use response.text as a property
-        return {
-            storesText: response.text || "Não foi possível encontrar lojas.",
-            groundingChunks: groundingChunks as GroundingChunk[]
-        };
-    };
-
-    const [diagnosis, storesData] = await Promise.all([
-        imageAnalysisPromise(),
-        findStoresPromise(),
-    ]);
+    const diagnosis = await imageAnalysisPromise();
 
     return {
         diagnosis,
-        stores: storesData.storesText,
-        groundingChunks: storesData.groundingChunks
+        stores: "", // Retorno vazio pois a seção foi removida
+        groundingChunks: [] // Retorno vazio
     };
 };
 
