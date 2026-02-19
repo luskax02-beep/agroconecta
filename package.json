@@ -17,7 +17,8 @@
     "three": "0.160.0",
     "@react-three/fiber": "8.15.16",
     "@react-three/drei": "9.99.0",
-    "maath": "0.10.7"
+    "maath": "0.10.7",
+    "jspdf": "2.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

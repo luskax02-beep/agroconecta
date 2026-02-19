@@ -3,6 +3,7 @@ import React from 'react';
 import { AnalysisResult } from '../types';
 import MapPinIcon from './icons/MapPinIcon';
 import GlobeIcon from './icons/GlobeIcon';
+import { jsPDF } from "jspdf";
 
 const parseAnalysis = (markdown: string) => {
     const sections = {
@@ -15,7 +16,6 @@ const parseAnalysis = (markdown: string) => {
     };
 
     const diagnosisMatch = markdown.match(/## 🔍 Diagnóstico\s*([\s\S]*?)(?=##|$)/);
-    // REMOVIDO: Regex de Validação Oficial (Ground Truth)
     const symptomsMatch = markdown.match(/## 📝 Sintomas Identificados\s*([\s\S]*?)(?=##|$)/);
     const differentialMatch = markdown.match(/## 🔬 Diagnóstico Diferencial\s*([\s\S]*?)(?=##|$)/);
     const treatmentMatch = markdown.match(/## 💊 Tratamento Recomendado\s*([\s\S]*?)(?=##|$)/);
@@ -44,12 +44,185 @@ const formatText = (text: string) => {
     });
 };
 
+const DownloadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+    </svg>
+);
+
 const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     const parsed = parseAnalysis(result.diagnosis);
 
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+        let yPos = 20;
+
+        // Configuração de Cores
+        const primaryColor: [number, number, number] = [4, 47, 46]; // Verde Escuro Profundo (Ex: Teal 950)
+        const secondaryColor: [number, number, number] = [20, 83, 45]; // Verde Green 900
+        const textColor: [number, number, number] = [60, 60, 60];
+
+        // Função para limpar e formatar Markdown para texto puro
+        const cleanMarkdown = (text: string) => {
+            if (!text) return '';
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove negrito
+                .replace(/\*(.*?)\*/g, '$1') // Remove itálico
+                .replace(/__(.*?)__/g, '$1')
+                .replace(/_(.*?)_/g, '$1')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links mantendo texto
+                .replace(/^#+\s/gm, '') // Remove headers markdown
+                .replace(/^\s*[-*]\s/gm, '• '); // Normaliza bullets
+        };
+
+        // --- BACKGROUND / MARCA D'ÁGUA ---
+        const addWatermark = () => {
+            doc.saveGraphicsState();
+            doc.setTextColor(245, 245, 245); // Cinza muito claro
+            doc.setFontSize(60);
+            doc.setFont("helvetica", "bold");
+            doc.text("AGROCONECTA", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
+            doc.restoreGraphicsState();
+        };
+        addWatermark();
+
+        // --- CABEÇALHO ---
+        // Barra Superior
+        doc.setFillColor(...primaryColor);
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        
+        // Título e Logo
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("RELATÓRIO TÉCNICO", margin, 20);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(200, 200, 200);
+        doc.text("AGROCONECTA | Inteligência Artificial", margin, 28);
+        
+        // Dados do Relatório (Direita)
+        doc.setTextColor(255, 255, 255);
+        doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth - margin, 20, { align: "right" });
+        doc.text(`ID: ${Date.now().toString().slice(-6)}`, pageWidth - margin, 28, { align: "right" });
+
+        yPos = 55;
+
+        // --- FUNÇÃO DE SEÇÃO ---
+        const addSection = (title: string, content: string) => {
+            if (!content) return;
+            const cleanedContent = cleanMarkdown(content);
+
+            // Calcula linhas necessárias
+            const lines = doc.splitTextToSize(cleanedContent, pageWidth - (margin * 2));
+            const estimatedHeight = lines.length * 7 + 25; // Header + linhas
+            
+            // Quebra de página se necessário
+            if (yPos + estimatedHeight > pageHeight - 30) {
+                doc.addPage();
+                addWatermark();
+                yPos = 30;
+            }
+
+            // Barra de Título da Seção
+            doc.setFillColor(240, 253, 244); // Verde claro fundo
+            doc.setDrawColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 10, 2, 2, 'FD');
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(...secondaryColor);
+            doc.text(title.toUpperCase(), margin + 5, yPos + 7);
+            
+            yPos += 18;
+
+            // Conteúdo
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(...textColor);
+            
+            lines.forEach((line: string) => {
+                // Checa quebra de página intra-seção
+                if (yPos > pageHeight - 20) {
+                     doc.addPage();
+                     addWatermark();
+                     yPos = 30;
+                }
+                
+                // Formatação simples para linhas "Chave: Valor" (comum no diagnóstico)
+                // Se a linha começar com algo que parece uma chave (ex: "Status:"), negritamos a chave.
+                const keyValMatch = line.match(/^([^:]+:)(.*)$/);
+                
+                if (keyValMatch && line.length < 100) {
+                    const key = keyValMatch[1];
+                    const val = keyValMatch[2];
+                    
+                    doc.setFont("helvetica", "bold");
+                    doc.text(key, margin, yPos);
+                    
+                    const keyWidth = doc.getTextWidth(key);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(val, margin + keyWidth + 2, yPos);
+                } else {
+                     // Verifica se é bullet point para indentar levemente
+                     if (line.trim().startsWith('•')) {
+                         doc.text(line, margin + 2, yPos);
+                     } else {
+                         doc.text(line, margin, yPos);
+                     }
+                }
+                
+                yPos += 6; // Espaçamento entre linhas
+            });
+
+            yPos += 10; // Espaço após seção
+        };
+
+        // --- ADICIONAR CONTEÚDO ---
+        if (parsed.raw) {
+             addSection("Diagnóstico Completo", parsed.raw);
+        } else {
+            addSection("Identificação e Confiança", parsed.diagnosis);
+            addSection("Evidências Encontradas", parsed.symptoms);
+            if (parsed.differential) addSection("Diagnóstico Diferencial", parsed.differential);
+            addSection("Plano de Ação", parsed.treatment);
+            addSection("Medidas Preventivas", parsed.prevention);
+        }
+
+        // --- RODAPÉ EM TODAS AS PÁGINAS ---
+        const pageCount = doc.getNumberOfPages();
+        for(let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+            
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text("Relatório gerado por agroconecta.online", margin, pageHeight - 10);
+            doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+        }
+
+        doc.save("Agroconecta_Relatorio.pdf");
+    };
+
     if (parsed.raw) {
          return (
-            <div className="mt-8 w-full max-w-4xl mx-auto animate-fade-in-up pointer-events-auto">
+            <div className="mt-8 w-full max-w-4xl mx-auto animate-fade-in-up pointer-events-auto relative">
+                <div className="flex justify-end mb-4">
+                    <button 
+                        onClick={handleExportPDF}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors shadow-glow-sm"
+                    >
+                        <DownloadIcon className="w-4 h-4" />
+                        Exportar PDF
+                    </button>
+                </div>
                 <div className="bg-black/30 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/10">
                      <pre className="whitespace-pre-wrap font-sans text-zinc-300 leading-relaxed font-light">{parsed.raw}</pre>
                 </div>
@@ -58,7 +231,19 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     }
 
     return (
-        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6 pb-12 pointer-events-auto">
+        <div className="mt-8 w-full max-w-4xl mx-auto space-y-6 pb-12 pointer-events-auto relative">
+            
+            <div className="flex justify-between items-center px-2">
+                <h2 className="text-white text-lg font-light tracking-widest">Resultado da Análise</h2>
+                <button 
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-black rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] group"
+                >
+                    <DownloadIcon className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                    Exportar PDF
+                </button>
+            </div>
+
             {/* Diagnosis - Transparent High Contrast */}
             <div className="bg-white/10 backdrop-blur-3xl rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden animate-fade-in-up border border-white/20" style={{animationDelay: '0ms'}}>
                 <div className="p-8 relative">
@@ -71,8 +256,6 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                     </div>
                 </div>
             </div>
-
-            {/* REMOVIDO: Official Validation - Ground Truth Card */}
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Symptoms - Card */}
@@ -149,8 +332,6 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                     </div>
                 </div>
             </div>
-
-            {/* REMOVIDO: Stores Section (Parceiros & Logística) */}
         </div>
     );
 };
