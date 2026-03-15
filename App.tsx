@@ -1,7 +1,8 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { analyzeCrop } from './services/geminiService';
 import { db } from './services/databaseService';
+import { checkPaymentRedirect } from './services/kirvanoService';
 import { AnalysisResult, UserProfile as UserProfileType } from './types';
 import SparkleIcon from './components/icons/SparkleIcon';
 import UserIcon from './components/icons/UserIcon';
@@ -30,7 +31,7 @@ const LoadingSpinner: React.FC = () => (
             </div>
         </div>
         <p className="text-xs font-mono text-app-text/70 uppercase tracking-[0.2em] animate-pulse">
-            Processando Satélite...
+            Processando Imagem...
         </p>
     </div>
 );
@@ -59,7 +60,6 @@ const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe
 );
 
 export default function App() {
-    // Login logic removed. App is now open access by default.
     const [showIntro, setShowIntro] = useState(true);
 
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -85,6 +85,15 @@ export default function App() {
     const [isPastoConectaOpen, setIsPastoConectaOpen] = useState<boolean>(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
+    // Check for payment return on mount
+    useEffect(() => {
+        const justPaid = checkPaymentRedirect();
+        if (justPaid) {
+            setIsSubscribed(true);
+            setIsCheckoutOpen(true); // Open modal to show success state
+        }
+    }, []);
+
     const handleThemeChange = (newTheme: string) => {
         setTheme(newTheme);
         localStorage.setItem('agroconecta_theme', newTheme);
@@ -95,18 +104,17 @@ export default function App() {
         db.user.updateProfile(newProfile);
     };
 
-    const handleImageSelect = useCallback((file: File) => {
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setAnalysisResult(null);
-        setError(null);
-    }, []);
+    // Main Analysis Logic
+    const performAnalysis = async (file: File) => {
+        if (!file) return;
 
-    const handleAnalyze = async () => {
-        if (!imageFile) return;
+        // Check limits before starting
+        const currentCount = parseInt(localStorage.getItem('agroconectaPromptCount') || '0');
+        const userIsSubscribed = localStorage.getItem('agroconectaIsSubscribed') === 'true';
 
-        if (!isSubscribed && promptCount >= FREE_PROMPT_LIMIT) {
+        if (!userIsSubscribed && currentCount >= FREE_PROMPT_LIMIT) {
             setError("Limite de crédito atingido. Atualização necessária.");
+            handleOpenCheckout(); 
             return;
         }
 
@@ -115,11 +123,11 @@ export default function App() {
         setAnalysisResult(null);
 
         try {
-            const result = await analyzeCrop(imageFile, userProfile.location);
+            const result = await analyzeCrop(file, userProfile.location);
             setAnalysisResult(result);
             
-            if (!isSubscribed) {
-                const newCount = promptCount + 1;
+            if (!userIsSubscribed) {
+                const newCount = currentCount + 1;
                 setPromptCount(newCount);
                 localStorage.setItem('agroconectaPromptCount', newCount.toString());
             }
@@ -139,11 +147,22 @@ export default function App() {
         }
     };
 
+    const handleImageSelect = useCallback((file: File) => {
+        setImageFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setAnalysisResult(null);
+        setError(null);
+        
+        // AUTO-START ANALYSIS
+        performAnalysis(file);
+    }, []);
+
     const handleClear = () => {
         setImageFile(null);
         setPreviewUrl(null);
         setAnalysisResult(null);
         setError(null);
+        setLoading(false);
     };
 
     const handleOpenCheckout = () => {
@@ -165,7 +184,7 @@ export default function App() {
     return (
         <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden ${theme === 'green' ? 'theme-green' : ''}`}>
             
-            {/* Background 3D - Always visible now, just slightly dimmed during preview for aesthetics */}
+            {/* Background 3D */}
             <div className={`fixed inset-0 z-0 transition-opacity duration-1000 ${previewUrl ? 'opacity-40' : 'opacity-100'}`}>
                  <Background3D theme={theme} />
             </div>
@@ -224,16 +243,13 @@ export default function App() {
                         {!previewUrl && (
                             canAnalyze ? (
                                 <div className="w-full flex flex-col items-center py-10">
-                                    {/* Glass Welcome Badge */}
                                     <div className="mb-10 pointer-events-auto animate-fade-in-up">
                                         <div className="relative bg-white/5 backdrop-blur-lg border border-white/10 px-8 py-3 rounded-full flex items-center gap-4 shadow-2xl overflow-hidden group hover:border-white/20 transition-all duration-500">
                                             <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
-                                            
                                             <span className="relative flex h-2 w-2">
                                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                                             </span>
-                                            
                                             <span className="text-xs font-mono text-white/90 uppercase tracking-[0.2em] relative z-10">
                                                 Sistema Pronto
                                             </span>
@@ -253,51 +269,61 @@ export default function App() {
                             )
                         )}
 
-                        {error && (
+                        {error && !loading && (
                             <div className="mt-6 bg-red-950/30 border border-red-500/30 text-red-200 px-6 py-4 rounded-2xl relative w-full max-w-lg text-center animate-fade-in backdrop-blur-xl pointer-events-auto font-light text-sm tracking-wide shadow-lg" role="alert">
                                 {error}
-                            </div>
-                        )}
-
-                        {previewUrl && !analysisResult && (
-                            <div className="w-full max-w-4xl mt-8 animate-fade-in-up pointer-events-auto">
-                                <div className="bg-black/40 backdrop-blur-2xl rounded-[2rem] shadow-2xl overflow-hidden border border-white/10 flex flex-col md:flex-row">
-                                    
-                                    <div className="md:w-1/2 bg-black/20 flex items-center justify-center p-8 relative">
-                                        <img src={previewUrl} alt="Preview" className="rounded-2xl shadow-2xl max-h-[400px] object-contain relative z-10 border border-white/10" />
-                                        {/* Subtle gradient overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
-                                    </div>
-
-                                    <div className="md:w-1/2 p-10 flex flex-col justify-center">
-                                        <h2 className="text-3xl font-light text-white mb-8 tracking-tight">Imagem <span className="font-bold">Carregada</span></h2>
-                                        <div className="space-y-4">
-                                            <button
-                                                onClick={handleAnalyze}
-                                                disabled={loading || !canAnalyze}
-                                                className="w-full group relative overflow-hidden rounded-xl bg-white px-6 py-4 text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] disabled:opacity-50"
-                                            >
-                                                <div className="relative z-10 flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]">
-                                                    <SparkleIcon className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                                                    {loading ? 'Processando...' : 'Iniciar Diagnóstico'}
-                                                </div>
-                                            </button>
-                                            
-                                            <button
-                                                onClick={handleClear}
-                                                disabled={loading}
-                                                className="w-full rounded-xl bg-transparent border border-white/20 px-6 py-4 text-zinc-400 font-medium text-xs uppercase tracking-widest transition-all hover:bg-white/5 hover:text-white hover:border-white/40"
-                                            >
-                                                Descartar
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div className="mt-4">
+                                    <button onClick={handleClear} className="underline text-xs uppercase tracking-wider">Tentar Novamente</button>
                                 </div>
                             </div>
                         )}
+
+                        {previewUrl && (
+                            <div className="w-full max-w-4xl mt-8 animate-fade-in-up pointer-events-auto">
+                                {!analysisResult && !loading && !error && (
+                                    /* Estado Intermediário Raro (se algo parar o loading mas manter a img) */
+                                    <div className="text-center mb-4 text-white">Pronto para analisar</div>
+                                )}
+                                
+                                {loading ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="relative w-64 h-64 rounded-2xl overflow-hidden border border-white/20 shadow-2xl mb-8">
+                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover opacity-50" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                 <LoadingSpinner />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Se tiver resultado ou erro, mostra a imagem menor ou o resultado */
+                                    !analysisResult && !error && (
+                                        <div className="hidden"></div>
+                                    )
+                                )}
+                            </div>
+                        )}
                         
-                        {loading && <LoadingSpinner />}
-                        {analysisResult && <AnalysisDisplay result={analysisResult} />}
+                        {analysisResult && (
+                             <div className="w-full flex flex-col items-center">
+                                 {/* Imagem pequena acima do resultado */}
+                                 <div className="w-32 h-32 rounded-xl overflow-hidden border border-white/20 mb-6 relative group pointer-events-auto cursor-pointer" onClick={handleClear} title="Nova Análise">
+                                     <img src={previewUrl!} alt="Analyzed" className="w-full h-full object-cover" />
+                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                         <span className="text-[10px] text-white font-bold uppercase">Nova Foto</span>
+                                     </div>
+                                 </div>
+                                 <AnalysisDisplay result={analysisResult} imageUrl={previewUrl} />
+                                 <div className="mt-10 pb-10 pointer-events-auto">
+                                     <button
+                                         onClick={handleClear}
+                                         className="rounded-xl bg-transparent border border-white/20 px-8 py-4 text-zinc-400 font-medium text-xs uppercase tracking-widest transition-all hover:bg-white/5 hover:text-white hover:border-white/40"
+                                     >
+                                         Nova Análise
+                                     </button>
+                                 </div>
+                             </div>
+                        )}
 
                     </main>
                     <Footer />

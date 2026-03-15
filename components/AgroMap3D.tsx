@@ -399,7 +399,7 @@ const AgroMap3D: React.FC<AgroMap3DProps> = ({ isOpen, onClose }) => {
                                     style={{ border: 0, filter: 'grayscale(100%) invert(90%)' }} // Cool inverted effect for map
                                     loading="lazy"
                                     allowFullScreen
-                                    src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.API_KEY}&location=${encodeURIComponent(data?.locationName || location)}`}
+                                    src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.GEMINI_API_KEY || process.env.API_KEY}&location=${encodeURIComponent(data?.locationName || location)}`}
                                 ></iframe>
                             ) : (
                                 <div className="text-center text-zinc-600">

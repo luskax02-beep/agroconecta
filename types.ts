@@ -12,6 +12,7 @@ export interface GroundingChunk {
 
 export interface AnalysisResult {
   diagnosis: string;
+  confidence?: number;
   stores: string;
   groundingChunks: GroundingChunk[];
 }
