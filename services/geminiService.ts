@@ -3,11 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { GroundingChunk, AnalysisResult, TerrainAnalysis } from '../types';
 
 // Initialization following Google GenAI SDK strict guidelines
-const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-if (!apiKey) {
-  console.error("API Key is missing! process.env:", process.env);
-}
-const ai = new GoogleGenAI({ apiKey });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -25,6 +21,8 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
     const imageAnalysisPromise = async () => {
         const imagePart = await fileToGenerativePart(imageFile);
         
+        // Novo prompt "Motor de Diagnóstico Fitossanitário AgroConecta"
+        // REMOVIDO: Seção de Validação Oficial (Ground Truth) do output solicitado
         const prompt = `
             Papel: Você é o motor de diagnóstico fitossanitário do AgroConecta. Sua função é analisar a imagem fornecida para identificar anormalidades, utilizando bases de dados científicas como "Ground Truth" internamente para garantir precisão, mas gerando um relatório direto para o produtor.
 
@@ -34,9 +32,8 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
             - Use termos técnicos, mas explique-os brevemente se forem complexos.
             - Use negrito (**texto**) para ressaltar ações e nomes de doenças.
 
-            Responda ESTRITAMENTE com um objeto JSON válido contendo os seguintes campos:
-            - "confidence": Um número de 0 a 100 representando a sua confiança no diagnóstico.
-            - "diagnosis": Uma string formatada em Markdown com a seguinte estrutura:
+            ESTRUTURA DO RELATÓRIO (Layout Obrigatório):
+            Responda ESTRITAMENTE com os cabeçalhos Markdown abaixo:
 
             ## 🔍 Diagnóstico
             **Status do Diagnóstico:** [Nome Comum da Doença/Praga]
@@ -63,39 +60,26 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
             - [Estratégia para evitar reincidência 2]
 
             DIRETRIZES DE SEGURANÇA:
-            - Se a imagem não for de planta/agricultura, retorne a string "Imagem inválida: Não foi possível identificar uma cultura agrícola." no campo "diagnosis" e "confidence" 0.
+            - Se a imagem não for de planta/agricultura, responda apenas: "Imagem inválida: Não foi possível identificar uma cultura agrícola."
         `;
         
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [imagePart, {text: prompt}] }],
-            config: {
-                responseMimeType: "application/json",
-            }
         });
 
-        try {
-            const result = JSON.parse(response.text || "{}");
-            return {
-                diagnosis: result.diagnosis || "Não foi possível gerar a análise.",
-                confidence: result.confidence || 0
-            };
-        } catch (e) {
-            console.error("Failed to parse JSON from image analysis", e);
-            return {
-                diagnosis: response.text || "Não foi possível gerar a análise.",
-                confidence: 0
-            };
-        }
+        // Use response.text as a property, not a method
+        return response.text || "Não foi possível gerar a análise.";
     };
 
-    const analysis = await imageAnalysisPromise();
+    // REMOVIDO: Busca de lojas (findStoresPromise) conforme solicitado para retirar "Parceiros & Logística"
+
+    const diagnosis = await imageAnalysisPromise();
 
     return {
-        diagnosis: analysis.diagnosis,
-        confidence: analysis.confidence,
-        stores: "", 
-        groundingChunks: [] 
+        diagnosis,
+        stores: "", // Retorno vazio pois a seção foi removida
+        groundingChunks: [] // Retorno vazio
     };
 };
 

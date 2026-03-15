@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AnalysisResult } from '../types';
 import MapPinIcon from './icons/MapPinIcon';
 import GlobeIcon from './icons/GlobeIcon';
 import { jsPDF } from "jspdf";
-import SpecialistModal from './SpecialistModal';
 
 const parseAnalysis = (markdown: string) => {
     const sections = {
@@ -51,9 +50,8 @@ const DownloadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | null }> = ({ result, imageUrl }) => {
+const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
     const parsed = parseAnalysis(result.diagnosis);
-    const [isSpecialistModalOpen, setIsSpecialistModalOpen] = useState(false);
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
@@ -256,24 +254,6 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | nul
                     <div className="text-xl font-light leading-relaxed whitespace-pre-line text-zinc-200 tracking-tight">
                         {formatText(parsed.diagnosis)}
                     </div>
-                    
-                    {result.confidence !== undefined && result.confidence < 85 && (
-                        <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">⚠️</span>
-                                <div>
-                                    <p className="text-yellow-500 font-bold text-sm">Confiança da IA: {result.confidence}%</p>
-                                    <p className="text-zinc-400 text-xs mt-1">Recomendamos a avaliação de um especialista para este caso.</p>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => setIsSpecialistModalOpen(true)}
-                                className="w-full sm:w-auto px-6 py-3 bg-yellow-500 text-black font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-yellow-400 transition-colors shadow-glow-sm whitespace-nowrap"
-                            >
-                                Chamar Especialista
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -352,13 +332,6 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | nul
                     </div>
                 </div>
             </div>
-            
-            <SpecialistModal 
-                isOpen={isSpecialistModalOpen}
-                onClose={() => setIsSpecialistModalOpen(false)}
-                analysisResult={result}
-                imageUrl={imageUrl}
-            />
         </div>
     );
 };

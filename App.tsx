@@ -313,7 +313,7 @@ export default function App() {
                                          <span className="text-[10px] text-white font-bold uppercase">Nova Foto</span>
                                      </div>
                                  </div>
-                                 <AnalysisDisplay result={analysisResult} imageUrl={previewUrl} />
+                                 <AnalysisDisplay result={analysisResult} />
                                  <div className="mt-10 pb-10 pointer-events-auto">
                                      <button
                                          onClick={handleClear}
