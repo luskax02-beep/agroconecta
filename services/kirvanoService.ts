@@ -1,5 +1,5 @@
 
-import { db } from './databaseService';
+import { database as db } from './databaseService';
 
 // CONFIGURAÇÃO REAL DE PAGAMENTO
 export const KIRVANO_CONFIG = {

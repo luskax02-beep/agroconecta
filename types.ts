@@ -1,5 +1,8 @@
 
+/// <reference types="@react-three/fiber" />
+
 export interface GroundingChunk {
+
   maps?: {
     title: string;
     uri: string;
@@ -28,6 +31,8 @@ export interface UserProfile {
   location: string;
   crops: string[];
   history: HistoryItem[];
+  isSubscribed?: boolean;
+  promptCount?: number;
 }
 
 export interface PastureListing {

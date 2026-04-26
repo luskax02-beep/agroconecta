@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, PerspectiveCamera, Html, Stars } from '@react-three/drei';

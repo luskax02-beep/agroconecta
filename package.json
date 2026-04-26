@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node server.ts",
-    "build": "vite build",
+    "start": "node dist/server.cjs",
+    "build": "vite build && npx esbuild server.ts --bundle --platform=node --target=node22 --outfile=dist/server.cjs --packages=external",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "firebase": "^12.12.1",
     "jspdf": "2.5.1",
     "maath": "0.10.7",
     "react": "18.2.0",
@@ -24,9 +25,11 @@
     "vite": "^7.2.4"
   },
   "devDependencies": {
+    "@firebase/eslint-plugin-security-rules": "^0.0.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",
+    "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^5.0.0",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

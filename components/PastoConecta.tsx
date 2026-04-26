@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { PastureListing } from '../types';
 import MapPinIcon from './icons/MapPinIcon';
 import CowIcon from './icons/CowIcon';
+import { database } from '../services/databaseService';
 
 interface PastoConectaProps {
     isOpen: boolean;
@@ -26,37 +27,21 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
     });
 
     useEffect(() => {
-        const storedListings = localStorage.getItem('agroconecta_pastures');
-        if (storedListings) {
-            setListings(JSON.parse(storedListings));
-        } else {
-            const seedData: PastureListing[] = [
-                {
-                    id: '1',
-                    title: 'Pasto Alta Mogiana - Lote A',
-                    location: 'Franca, SP',
-                    area: 45,
-                    price: 2500,
-                    description: 'Pasto de braquiária bem formado, com água natural.',
-                    contactPhone: '(16) 99999-9999',
-                    features: ['Curral', 'Água Natural'],
-                    ownerName: 'Roberto Almeida',
-                    createdAt: Date.now()
-                }
-            ];
-            setListings(seedData);
-            localStorage.setItem('agroconecta_pastures', JSON.stringify(seedData));
-        }
-    }, []);
+        if (!isOpen) return;
+        const fetchListings = async () => {
+             const data = await database.marketplace.getListings();
+             setListings(data);
+        };
+        fetchListings();
+    }, [isOpen, activeTab]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newListing: PastureListing = {
-            id: Date.now().toString(),
+        const newListing: Omit<PastureListing, 'id'> = {
             title: formData.title,
             location: formData.location,
             area: Number(formData.area),
@@ -68,9 +53,7 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
             createdAt: Date.now()
         };
 
-        const updatedListings = [newListing, ...listings];
-        setListings(updatedListings);
-        localStorage.setItem('agroconecta_pastures', JSON.stringify(updatedListings));
+        await database.marketplace.addListing(newListing);
         
         setFormData({ title: '', location: '', area: '', price: '', description: '', contactPhone: '', ownerName: '' });
         setNotification('Anúncio publicado.');
