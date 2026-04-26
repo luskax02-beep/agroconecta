@@ -10,6 +10,7 @@
         "updatedAt": { "type": "number" },
         "farmName": { "type": "string" },
         "location": { "type": "string" },
+        "promptCount": { "type": "number" },
         "crops": { "type": "array" }
       }
     },
