@@ -8,7 +8,7 @@ interface SpecialistModalProps {
     imageUrl: string | null;
 }
 
-const SpecialistModal: React.FC<SpecialistModalProps> = ({ isOpen, onClose, analysisResult }) => {
+const SpecialistModal: React.FC<SpecialistModalProps> = ({ isOpen, onClose, analysisResult, imageUrl }) => {
     const [step, setStep] = useState<'intro' | 'payment' | 'success'>('intro');
     const [isProcessing, setIsProcessing] = useState(false);
 

@@ -1,6 +1,6 @@
 
-import { GoogleGenAI } from "@google/genai";
-import type { AnalysisResult, TerrainAnalysis } from '../types';
+import { GoogleGenAI, Type } from "@google/genai";
+import type { GroundingChunk, AnalysisResult, TerrainAnalysis } from '../types';
 
 // Initialization following Google GenAI SDK strict guidelines
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
@@ -90,11 +90,6 @@ export const analyzeCrop = async (imageFile: File, userLocation?: string): Promi
     };
 
     const analysis = await imageAnalysisPromise();
-
-    // Use userLocation if provided
-    if (userLocation) {
-        console.log(`Analyzing crop for location: ${userLocation}`);
-    }
 
     return {
         diagnosis: analysis.diagnosis,

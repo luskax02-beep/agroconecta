@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import SparkleIcon from './icons/SparkleIcon';
 import SettingsIcon from './icons/SettingsIcon';
-import { KIRVANO_CONFIG, processWebhook, generateTestPayload } from '../services/kirvanoService';
+import { KIRVANO_CONFIG, checkPaymentRedirect, processWebhook, generateTestPayload } from '../services/kirvanoService';
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -11,33 +11,31 @@ interface CheckoutModalProps {
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSuccess }) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [view, setView] = useState<'offer' | 'processing' | 'success' | 'config'>('offer');
 
     useEffect(() => {
         if (isOpen && localStorage.getItem('agroconectaIsSubscribed') === 'true') {
-            const timeout = setTimeout(() => {
-                setView('success');
-                setTimeout(() => {
-                    onClose();
-                }, 3000);
-            }, 0);
-            return () => clearTimeout(timeout);
+            setView('success');
+            setTimeout(() => {
+                onClose();
+            }, 3000);
         } else {
-            const timeout = setTimeout(() => {
-                setView('offer');
-            }, 0);
-            return () => clearTimeout(timeout);
+            setView('offer');
         }
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     const handleOpenCheckout = () => {
+        setIsLoading(true);
         window.open(KIRVANO_CONFIG.CHECKOUT_URL, '_blank');
         setView('processing');
+        setIsLoading(false);
     };
 
     const handleSimulateWebhook = async () => {
+        setIsLoading(true);
         const payload = generateTestPayload();
         // Tenta webhook, se falhar (sem ngrok), aprova localmente
         const result = await processWebhook(payload);
@@ -48,11 +46,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
                 onClose();
             }, 2000);
         }
+        setIsLoading(false);
     };
-
-    // Use it somewhere or remove it. For now, let's keep it but suppress the warning if it's meant to be a dev tool.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _handleSimulateWebhook = handleSimulateWebhook;
 
     const handleForceTestMode = () => {
         // Bypass total - para quem não quer configurar Ngrok

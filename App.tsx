@@ -62,6 +62,7 @@ const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe
 export default function App() {
     const [showIntro, setShowIntro] = useState(true);
 
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -104,7 +105,7 @@ export default function App() {
     };
 
     // Main Analysis Logic
-    const performAnalysis = useCallback(async (file: File) => {
+    const performAnalysis = async (file: File) => {
         if (!file) return;
 
         // Check limits before starting
@@ -134,9 +135,9 @@ export default function App() {
             db.user.addHistoryItem(result);
             setUserProfile(db.user.getProfile()); 
 
-        } catch (e: unknown) {
+        } catch (e: any) {
             console.error(e);
-            if (e instanceof Error && (e.message.includes('403') || e.message.includes('API key'))) {
+            if (e.message && (e.message.includes('403') || e.message.includes('API key'))) {
                  setError("Erro do Sistema: Configuração de API Inválida.");
             } else {
                  setError("Falha na análise. Por favor, tente novamente.");
@@ -144,16 +145,17 @@ export default function App() {
         } finally {
             setLoading(false);
         }
-    }, [userProfile.location]);
+    };
 
     const handleImageSelect = useCallback((file: File) => {
+        setImageFile(file);
         setPreviewUrl(URL.createObjectURL(file));
         setAnalysisResult(null);
         setError(null);
         
         // AUTO-START ANALYSIS
         performAnalysis(file);
-    }, [performAnalysis]);
+    }, []);
 
     const handleClear = () => {
         setImageFile(null);

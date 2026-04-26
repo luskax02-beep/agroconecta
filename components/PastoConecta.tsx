@@ -11,10 +11,24 @@ interface PastoConectaProps {
 
 const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<'browse' | 'create'>('browse');
-    const [listings, setListings] = useState<PastureListing[]>(() => {
+    const [listings, setListings] = useState<PastureListing[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [notification, setNotification] = useState<string | null>(null);
+
+    const [formData, setFormData] = useState({
+        title: '',
+        location: '',
+        area: '',
+        price: '',
+        description: '',
+        contactPhone: '',
+        ownerName: ''
+    });
+
+    useEffect(() => {
         const storedListings = localStorage.getItem('agroconecta_pastures');
         if (storedListings) {
-            return JSON.parse(storedListings);
+            setListings(JSON.parse(storedListings));
         } else {
             const seedData: PastureListing[] = [
                 {
@@ -30,25 +44,9 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
                     createdAt: Date.now()
                 }
             ];
+            setListings(seedData);
             localStorage.setItem('agroconecta_pastures', JSON.stringify(seedData));
-            return seedData;
         }
-    });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [notification, setNotification] = useState<string | null>(null);
-
-    const [formData, setFormData] = useState({
-        title: '',
-        location: '',
-        area: '',
-        price: '',
-        description: '',
-        contactPhone: '',
-        ownerName: ''
-    });
-
-    useEffect(() => {
-        // Any side effects related to listings can go here, but initialization is moved to useState
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -1,12 +1,13 @@
 
-import React, { useState, useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, PerspectiveCamera, Html, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { analyzeTerrain } from '../services/geminiService';
 import { TerrainAnalysis, Landmark } from '../types';
 import GlobeIcon from './icons/GlobeIcon';
 import MapPinIcon from './icons/MapPinIcon';
+import SparkleIcon from './icons/SparkleIcon';
 import StreetViewIcon from './icons/StreetViewIcon';
 
 interface AgroMap3DProps {
@@ -63,20 +64,9 @@ const TerrainMesh = ({ isScanning, roughness, landmarks }: { isScanning: boolean
     const geometry = useMemo(() => generateTerrainGeometry(24, 24, 48, roughness), [roughness]);
 
     const landmarkPositions = useMemo(() => {
-        // Use a seeded random or deterministic approach if possible, 
-        // but for now, we'll just generate them once on mount.
-        // To make it pure, we should ideally pass a seed or use indices.
-        // For this fix, we'll accept the initial random generation as it's inside useMemo.
-        // However, the linter complains about Math.random inside useMemo.
-        // A better approach is to generate these outside or use a pseudo-random function based on index.
-        const pseudoRandom = (seed: number) => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-
-        return landmarks.map((_, i) => {
-            const x = (pseudoRandom(i * 3) - 0.5) * 16;
-            const y = (pseudoRandom(i * 3 + 1) - 0.5) * 16;
+        return landmarks.map(() => {
+            const x = (Math.random() - 0.5) * 16;
+            const y = (Math.random() - 0.5) * 16;
             let z = Math.sin(x * 0.5) * Math.cos(y * 0.5) * 2 * roughness;
             z += Math.sin(x * 2.5 + y * 1.5) * 0.5 * roughness;
             return [x, y, z] as [number, number, number];
@@ -143,19 +133,15 @@ const ScanningParticles = ({ isScanning }: { isScanning: boolean }) => {
     // Initialize particles with random positions and velocities
     const particles = useMemo(() => {
         const data = [];
-        const pseudoRandom = (seed: number) => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
         for(let i=0; i<count; i++) {
-            const x = (pseudoRandom(i * 4) - 0.5) * 50;
-            const z = (pseudoRandom(i * 4 + 1) - 0.5) * 50;
-            const y = pseudoRandom(i * 4 + 2) * 15; // Floating volume above terrain
+            const x = (Math.random() - 0.5) * 50;
+            const z = (Math.random() - 0.5) * 50;
+            const y = Math.random() * 15; // Floating volume above terrain
             data.push({
                 x, y, z,
                 ox: x, oy: y, oz: z, // Original positions
-                speed: pseudoRandom(i * 4 + 3) * 0.02 + 0.01,
-                offset: pseudoRandom(i * 4 + 4) * 100
+                speed: Math.random() * 0.02 + 0.01,
+                offset: Math.random() * 100
             });
         }
         return data;
@@ -173,20 +159,14 @@ const ScanningParticles = ({ isScanning }: { isScanning: boolean }) => {
         
         const time = state.clock.getElapsedTime();
 
-        const newPositions = new Float32Array(count * 3);
-
         for(let i=0; i<count; i++) {
             const p = particles[i];
             
             // 1. Base Organic Motion (Flowing)
             // Use sin/cos to create a floating wave effect
-            const tx = p.ox + Math.sin(time * p.speed + p.offset) * 2;
-            const ty = p.oy + Math.cos(time * p.speed + p.offset) * 1;
-            const tz = p.oz;
-
-            let finalTx = tx;
-            let finalTy = ty;
-            let finalTz = tz;
+            let tx = p.ox + Math.sin(time * p.speed + p.offset) * 2;
+            let ty = p.oy + Math.cos(time * p.speed + p.offset) * 1;
+            let tz = p.oz;
 
             // 2. Scan Line Effect (When loading)
             // A bar of raised particles moving across Z axis
@@ -198,14 +178,14 @@ const ScanningParticles = ({ isScanning }: { isScanning: boolean }) => {
                  if (distToScan < 5) {
                      // Lift particles near the scan line
                      const lift = (5 - distToScan) * 0.5;
-                     finalTy += lift;
+                     ty += lift;
                  }
             }
 
             // 3. Mouse Interaction (Repulsion/Attraction)
             if (intersect) {
-                const dx = finalTx - target.x;
-                const dz = finalTz - target.z;
+                const dx = tx - target.x;
+                const dz = tz - target.z;
                 const dist = Math.sqrt(dx*dx + dz*dz);
                 const radius = 10;
 
@@ -213,18 +193,18 @@ const ScanningParticles = ({ isScanning }: { isScanning: boolean }) => {
                     const force = (radius - dist) / radius;
                     // Displace particles away from cursor and up
                     const angle = Math.atan2(dz, dx);
-                    finalTx += Math.cos(angle) * force * 2;
-                    finalTz += Math.sin(angle) * force * 2;
-                    finalTy += force * 3; // Levitate
+                    tx += Math.cos(angle) * force * 2;
+                    tz += Math.sin(angle) * force * 2;
+                    ty += force * 3; // Levitate
                 }
             }
             
-            newPositions[i*3] = finalTx;
-            newPositions[i*3+1] = finalTy;
-            newPositions[i*3+2] = finalTz;
+            positions[i*3] = tx;
+            positions[i*3+1] = ty;
+            positions[i*3+2] = tz;
         }
         
-        mesh.current.geometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+        mesh.current.geometry.attributes.position.needsUpdate = true;
         
         // Slowly rotate the entire system
         mesh.current.rotation.y = time * 0.05;
