@@ -1,8 +1,6 @@
 
 import React, { useState } from 'react';
 import { AnalysisResult } from '../types';
-import MapPinIcon from './icons/MapPinIcon';
-import GlobeIcon from './icons/GlobeIcon';
 import { jsPDF } from "jspdf";
 import SpecialistModal from './SpecialistModal';
 
@@ -285,7 +283,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | nul
                     </h3>
                     <ul className="space-y-4">
                         {parsed.symptoms.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
                                 <li key={i} className="flex items-start text-zinc-200">
@@ -304,7 +302,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | nul
                     </h3>
                     <ul className="space-y-4">
                         {parsed.prevention.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
                                 <li key={i} className="flex items-start text-zinc-200">
@@ -340,7 +338,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | nul
                     </h3>
                     <div className="grid gap-3">
                          {parsed.treatment.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
                                 <div key={i} className="flex items-center bg-black/20 p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">

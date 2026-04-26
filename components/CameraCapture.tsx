@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface CameraCaptureProps {
     onCapture: (file: File) => void;
@@ -9,39 +9,45 @@ interface CameraCaptureProps {
 const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [stream, setStream] = useState<MediaStream | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
-    const startCamera = useCallback(async () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-
-        try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facingMode },
-                audio: false
-            });
-            setStream(mediaStream);
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-            }
-            setError(null);
-        } catch (err) {
-            console.error("Camera access denied:", err);
-            setError("Acesso à câmera negado. Verifique as permissões do navegador.");
-        }
-    }, [facingMode]);
-
     useEffect(() => {
-        startCamera();
-        return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+        let active = true;
+        const currentVideoRef = videoRef.current;
+        const initCamera = async () => {
+            try {
+                const mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode },
+                    audio: false
+                });
+                if (active) {
+                    if (currentVideoRef) {
+                        currentVideoRef.srcObject = mediaStream;
+                    }
+                    setError(null);
+                } else {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                }
+            } catch (err) {
+                if (active) {
+                    console.error("Camera access denied:", err);
+                    setError("Acesso à câmera negado. Verifique as permissões do navegador.");
+                }
             }
         };
-    }, [startCamera]);
+
+        initCamera();
+
+        return () => {
+            active = false;
+            if (currentVideoRef && currentVideoRef.srcObject) {
+                const currentStream = currentVideoRef.srcObject as MediaStream;
+                currentStream.getTracks().forEach(track => track.stop());
+                currentVideoRef.srcObject = null;
+            }
+        };
+    }, [facingMode]);
 
     const handleCapture = () => {
         if (videoRef.current && canvasRef.current) {

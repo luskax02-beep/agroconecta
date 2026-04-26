@@ -72,8 +72,9 @@ export const processWebhook = async (payload: KirvanoWebhookPayload) => {
             body: JSON.stringify({ ...payload, token: 'agro-token-123' })
         });
         return { success: true, message: "Webhook enviado ao Servidor Local" };
-    } catch (e) {
+    } catch (e: unknown) {
         // Fallback local se o servidor estiver desligado
+        console.warn("Webhook failed, falling back to local simulation", e);
         if (payload.event === 'sale.approved') {
             localStorage.setItem('agroconectaIsSubscribed', 'true');
             return { success: true, message: "Acesso Liberado (Simulação Local)" };
