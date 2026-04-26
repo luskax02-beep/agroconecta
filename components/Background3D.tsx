@@ -1,21 +1,24 @@
 
-// @ts-nocheck
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const DataGlobe = () => {
+const DataGlobe = ({ theme }: { theme: string }) => {
   const mesh = useRef<THREE.Points>(null!);
   const count = 2500;
   
-  // Decide colors based on theme
-  const accentColor = new THREE.Color('#ffffff');
-  const baseColor = new THREE.Color('#444444');
-
   const { positions, colors, sizes } = useMemo(() => {
+    const accentColor = theme === 'green' ? new THREE.Color('#34d399') : new THREE.Color('#ffffff');
+    const baseColor = theme === 'green' ? new THREE.Color('#064e3b') : new THREE.Color('#3f3f46');
+
     const p = new Float32Array(count * 3);
     const c = new Float32Array(count * 3);
     const s = new Float32Array(count);
+
+    const pseudoRandom = (seed: number) => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    };
 
     for (let i = 0; i < count; i++) {
         const phi = Math.acos(-1 + (2 * i) / count);
@@ -26,17 +29,17 @@ const DataGlobe = () => {
         p[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
         p[i * 3 + 2] = r * Math.cos(phi);
 
-        const isHighlight = Math.random() > 0.95;
+        const isHighlight = pseudoRandom(i * 3) > 0.95;
         const color = isHighlight ? accentColor : baseColor;
 
         c[i * 3] = color.r;
         c[i * 3 + 1] = color.g;
         c[i * 3 + 2] = color.b;
 
-        s[i] = isHighlight ? Math.random() * 0.15 + 0.05 : 0.05;
+        s[i] = isHighlight ? pseudoRandom(i * 3 + 1) * 0.15 + 0.05 : 0.05;
     }
     return { positions: p, colors: c, sizes: s };
-  }, [count, accentColor, baseColor]);
+  }, [count, theme]);
 
   useFrame((state) => {
     if (mesh.current) {
@@ -79,7 +82,7 @@ const ConnectionLines = () => {
     )
 }
 
-const Background3D: React.FC = () => {
+const Background3D: React.FC<{ theme: string }> = ({ theme }) => {
   return (
     <div className="fixed inset-0 w-full h-full z-0 pointer-events-none bg-app-bg transition-colors duration-500">
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-app-bg via-transparent to-app-bg pointer-events-none opacity-80" />
@@ -92,7 +95,7 @@ const Background3D: React.FC = () => {
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]} 
       >
-        <DataGlobe />
+        <DataGlobe theme={theme} />
         <ConnectionLines />
       </Canvas>
     </div>

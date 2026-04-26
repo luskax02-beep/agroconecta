@@ -11,9 +11,7 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node",
-      "three",
-      "@react-three/fiber"
+      "node"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -27,7 +25,5 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  },
-  "include": ["."],
-  "exclude": ["node_modules"]
+  }
 }

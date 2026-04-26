@@ -2,8 +2,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { analyzeCrop } from './services/geminiService';
 import { db } from './services/databaseService';
-import { auth } from './firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
 import { checkPaymentRedirect } from './services/kirvanoService';
 import { AnalysisResult, UserProfile as UserProfileType } from './types';
 import SparkleIcon from './components/icons/SparkleIcon';
@@ -20,7 +18,6 @@ import PastoConecta from './components/PastoConecta';
 import IntroAnimation from './components/IntroAnimation';
 import ImageSelector from './components/ImageSelector';
 import AnalysisDisplay from './components/AnalysisDisplay';
-import LoginScreen from './components/LoginScreen';
 
 const FREE_PROMPT_LIMIT = 3;
 
@@ -40,7 +37,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe }) => (
-    <div className="w-full max-w-lg mx-auto glass-panel glow-hover rounded-3xl p-8 text-center animate-fade-in-up pointer-events-auto">
+    <div className="w-full max-w-lg mx-auto bg-black/30 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/10 text-center animate-fade-in-up pointer-events-auto">
         <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-glow-sm">
             <SparkleIcon className="w-8 h-8 text-white" />
         </div>
@@ -64,10 +61,7 @@ const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe
 
 export default function App() {
     const [showIntro, setShowIntro] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [authLoading, setAuthLoading] = useState(true);
 
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -76,36 +70,13 @@ export default function App() {
     // Theme State
     const [theme, setTheme] = useState<string>(() => localStorage.getItem('agroconecta_theme') || 'default');
 
-    const [userProfile, setUserProfile] = useState<UserProfileType>({
-        farmName: '',
-        location: '',
-        crops: [],
-        history: [],
-        isSubscribed: false,
-        promptCount: 0
+    const [promptCount, setPromptCount] = useState<number>(() => {
+        return parseInt(localStorage.getItem('agroconectaPromptCount') || '0');
     });
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                setIsAuthenticated(true);
-                const profile = await db.user.getProfile();
-                setUserProfile(profile);
-            } else {
-                setIsAuthenticated(false);
-                setUserProfile({
-                    farmName: '',
-                    location: '',
-                    crops: [],
-                    history: [],
-                    isSubscribed: false,
-                    promptCount: 0
-                });
-            }
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
+    const [isSubscribed, setIsSubscribed] = useState<boolean>(() => {
+        return localStorage.getItem('agroconectaIsSubscribed') === 'true';
+    });
+    const [userProfile, setUserProfile] = useState<UserProfileType>(db.user.getProfile());
 
     const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
     const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
@@ -117,11 +88,10 @@ export default function App() {
     useEffect(() => {
         const justPaid = checkPaymentRedirect();
         if (justPaid) {
-            setUserProfile(prev => ({ ...prev, isSubscribed: true }));
-            db.user.updateProfile({ ...userProfile, isSubscribed: true });
+            setIsSubscribed(true);
             setIsCheckoutOpen(true); // Open modal to show success state
         }
-    }, [userProfile]);
+    }, []);
 
     const handleThemeChange = (newTheme: string) => {
         setTheme(newTheme);
@@ -134,12 +104,12 @@ export default function App() {
     };
 
     // Main Analysis Logic
-    const performAnalysis = async (file: File) => {
+    const performAnalysis = useCallback(async (file: File) => {
         if (!file) return;
 
         // Check limits before starting
-        const currentCount = userProfile.promptCount || 0;
-        const userIsSubscribed = userProfile.isSubscribed || false;
+        const currentCount = parseInt(localStorage.getItem('agroconectaPromptCount') || '0');
+        const userIsSubscribed = localStorage.getItem('agroconectaIsSubscribed') === 'true';
 
         if (!userIsSubscribed && currentCount >= FREE_PROMPT_LIMIT) {
             setError("Limite de crédito atingido. Atualização necessária.");
@@ -157,18 +127,16 @@ export default function App() {
             
             if (!userIsSubscribed) {
                 const newCount = currentCount + 1;
-                const newProfile = { ...userProfile, promptCount: newCount };
-                setUserProfile(newProfile);
-                await db.user.updateProfile(newProfile);
+                setPromptCount(newCount);
+                localStorage.setItem('agroconectaPromptCount', newCount.toString());
             }
 
-            await db.user.addHistoryItem(result);
-            const updatedProfile = await db.user.getProfile();
-            setUserProfile(updatedProfile); 
+            db.user.addHistoryItem(result);
+            setUserProfile(db.user.getProfile()); 
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e);
-            if (e.message && (e.message.includes('403') || e.message.includes('API key'))) {
+            if (e instanceof Error && (e.message.includes('403') || e.message.includes('API key'))) {
                  setError("Erro do Sistema: Configuração de API Inválida.");
             } else {
                  setError("Falha na análise. Por favor, tente novamente.");
@@ -176,17 +144,16 @@ export default function App() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userProfile.location]);
 
     const handleImageSelect = useCallback((file: File) => {
-        setImageFile(file);
         setPreviewUrl(URL.createObjectURL(file));
         setAnalysisResult(null);
         setError(null);
         
         // AUTO-START ANALYSIS
         performAnalysis(file);
-    }, [userProfile]); // Added userProfile to dependency array since it's used inside
+    }, [performAnalysis]);
 
     const handleClear = () => {
         setImageFile(null);
@@ -201,34 +168,27 @@ export default function App() {
     };
 
     const handlePaymentSuccess = () => {
-        const updatedProfile = { ...userProfile, isSubscribed: true };
-        setUserProfile(updatedProfile);
-        db.user.updateProfile(updatedProfile);
+        setIsSubscribed(true);
+        localStorage.setItem('agroconectaIsSubscribed', 'true');
         setError(null);
         setTimeout(() => {
             setIsCheckoutOpen(false);
         }, 1500);
     };
 
-    if (authLoading) {
-        return <div className="min-h-screen bg-app-bg flex items-center justify-center"><LoadingSpinner /></div>;
-    }
-
-    const promptsRemaining = FREE_PROMPT_LIMIT - (userProfile.promptCount || 0);
-    const canAnalyze = userProfile.isSubscribed || (userProfile.promptCount || 0) < FREE_PROMPT_LIMIT;
+    const promptsRemaining = FREE_PROMPT_LIMIT - promptCount;
+    const canAnalyze = isSubscribed || promptCount < FREE_PROMPT_LIMIT;
 
     return (
-        <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden`}>
+        <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden ${theme === 'green' ? 'theme-green' : ''}`}>
             
             {/* Background 3D */}
             <div className={`fixed inset-0 z-0 transition-opacity duration-1000 ${previewUrl ? 'opacity-40' : 'opacity-100'}`}>
-                 <Background3D />
+                 <Background3D theme={theme} />
             </div>
             
             {showIntro ? (
                 <IntroAnimation onFinish={() => setShowIntro(false)} />
-            ) : !isAuthenticated ? (
-                <LoginScreen />
             ) : (
                 <>
                     <header className="sticky top-0 z-30 bg-transparent backdrop-blur-sm border-b border-white/5 transition-all duration-300 pointer-events-none">
@@ -244,7 +204,7 @@ export default function App() {
                             
                             <div className="flex items-center gap-4">
                                 <div className="hidden sm:flex items-center">
-                                    {userProfile.isSubscribed ? (
+                                    {isSubscribed ? (
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.3)] uppercase tracking-wide">
                                             <SparkleIcon className="w-3 h-3 mr-1.5" />
                                             Premium
@@ -351,7 +311,7 @@ export default function App() {
                                          <span className="text-[10px] text-white font-bold uppercase">Nova Foto</span>
                                      </div>
                                  </div>
-                                 <AnalysisDisplay result={analysisResult} />
+                                 <AnalysisDisplay result={analysisResult} imageUrl={previewUrl} />
                                  <div className="mt-10 pb-10 pointer-events-auto">
                                      <button
                                          onClick={handleClear}
@@ -392,6 +352,8 @@ export default function App() {
                     <SettingsModal
                         isOpen={isSettingsOpen}
                         onClose={() => setIsSettingsOpen(false)}
+                        currentTheme={theme}
+                        onThemeChange={handleThemeChange}
                     />
                 </>
             )}

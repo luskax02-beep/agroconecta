@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AnalysisResult } from '../types';
-import MapPinIcon from './icons/MapPinIcon';
-import GlobeIcon from './icons/GlobeIcon';
 import { jsPDF } from "jspdf";
+import SpecialistModal from './SpecialistModal';
 
 const parseAnalysis = (markdown: string) => {
     const sections = {
@@ -50,8 +49,9 @@ const DownloadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
+const AnalysisDisplay: React.FC<{ result: AnalysisResult, imageUrl: string | null }> = ({ result, imageUrl }) => {
     const parsed = parseAnalysis(result.diagnosis);
+    const [isSpecialistModalOpen, setIsSpecialistModalOpen] = useState(false);
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
@@ -245,7 +245,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             </div>
 
             {/* Diagnosis - Transparent High Contrast */}
-            <div className="glass-panel glow-hover rounded-3xl overflow-hidden animate-fade-in-up" style={{animationDelay: '0ms'}}>
+            <div className="bg-white/10 backdrop-blur-3xl rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden animate-fade-in-up border border-white/20" style={{animationDelay: '0ms'}}>
                 <div className="p-8 relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-app-accent/10 rounded-full blur-[50px] pointer-events-none"></div>
                     <h3 className="flex items-center text-xs font-bold uppercase tracking-[0.2em] mb-4 border-b border-white/10 pb-4 text-app-accent">
@@ -254,18 +254,36 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                     <div className="text-xl font-light leading-relaxed whitespace-pre-line text-zinc-200 tracking-tight">
                         {formatText(parsed.diagnosis)}
                     </div>
+                    
+                    {result.confidence !== undefined && result.confidence < 85 && (
+                        <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">⚠️</span>
+                                <div>
+                                    <p className="text-yellow-500 font-bold text-sm">Confiança da IA: {result.confidence}%</p>
+                                    <p className="text-zinc-400 text-xs mt-1">Recomendamos a avaliação de um especialista para este caso.</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsSpecialistModalOpen(true)}
+                                className="w-full sm:w-auto px-6 py-3 bg-yellow-500 text-black font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-yellow-400 transition-colors shadow-glow-sm whitespace-nowrap"
+                            >
+                                Chamar Especialista
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Symptoms - Card */}
-                <div className="glass-panel glow-hover rounded-3xl p-8 animate-fade-in-up transition-all" style={{animationDelay: '150ms'}}>
+                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '150ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
                         <span className="text-lg mr-3 text-white">📝</span> Evidências Encontradas
                     </h3>
                     <ul className="space-y-4">
                         {parsed.symptoms.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
                                 <li key={i} className="flex items-start text-zinc-200">
@@ -278,13 +296,13 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 </div>
 
                 {/* Prevention - Card */}
-                <div className="glass-panel glow-hover rounded-3xl p-8 animate-fade-in-up transition-all" style={{animationDelay: '300ms'}}>
+                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '300ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
                         <span className="text-lg mr-3 text-white">🛡️</span> Prevenção
                     </h3>
                     <ul className="space-y-4">
                         {parsed.prevention.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
                                 <li key={i} className="flex items-start text-zinc-200">
@@ -301,10 +319,10 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 
             {/* Differential Diagnosis - Card */}
             {parsed.differential && (
-                <div className="glass-panel glow-hover rounded-3xl p-6 animate-fade-in-up transition-all group relative overflow-hidden" style={{animationDelay: '400ms'}}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <h3 className="flex items-center text-zinc-300 font-mono text-[10px] uppercase tracking-widest mb-6 relative z-10">
-                        <span className="text-lg mr-3 text-white">🔬</span> Diagnóstico Diferencial
+                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-yellow-500/10 p-6 animate-fade-in-up transition-all hover:border-yellow-500/20 group relative overflow-hidden" style={{animationDelay: '400ms'}}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                    <h3 className="flex items-center text-yellow-500/80 font-mono text-[10px] uppercase tracking-widest mb-6 relative z-10">
+                        <span className="text-lg mr-3 text-yellow-500">🔬</span> Diagnóstico Diferencial
                     </h3>
                     <div className="text-zinc-300 leading-relaxed font-light whitespace-pre-line relative z-10 text-sm">
                         {formatText(parsed.differential)}
@@ -313,17 +331,17 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             )}
 
              {/* Treatment (Plano de Ação) */}
-            <div className="glass-panel glow-hover rounded-3xl animate-fade-in-up transition-all" style={{animationDelay: '500ms'}}>
+            <div className="bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 animate-fade-in-up transition-all hover:bg-white/10" style={{animationDelay: '500ms'}}>
                 <div className="p-8">
                      <h3 className="flex items-center text-xl font-light text-white mb-6">
                         <span className="text-2xl mr-4">💊</span> Plano de Ação
                     </h3>
                     <div className="grid gap-3">
                          {parsed.treatment.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
+                            const cleanLine = line.replace(/^[*\\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
-                                <div key={i} className="flex items-center glass-panel p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">
+                                <div key={i} className="flex items-center bg-black/20 p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">
                                     <span className="text-app-accent mr-4 text-xl font-thin">|</span>
                                     <span className="text-zinc-200 leading-relaxed font-light text-sm">{formatText(cleanLine)}</span>
                                 </div>
@@ -332,6 +350,13 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                     </div>
                 </div>
             </div>
+            
+            <SpecialistModal 
+                isOpen={isSpecialistModalOpen}
+                onClose={() => setIsSpecialistModalOpen(false)}
+                analysisResult={result}
+                imageUrl={imageUrl}
+            />
         </div>
     );
 };
