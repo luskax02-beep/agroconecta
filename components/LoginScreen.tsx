@@ -12,17 +12,17 @@ const LoginScreen: React.FC = () => {
         setErrorMsg(null);
         try {
             await db.user.login();
-            // The auth state change will be picked up by App.tsx so no need to do anything else here
+            // With signInWithRedirect, the page will redirect. 
+            // Keep loading true so user knows it's working.
         } catch (error: any) {
             console.error("Login component error:", error);
             
             let displayError = error.message || "Erro ao conectar com Google. Se estiver no preview, tente abrir em uma nova aba.";
             if (error.code === 'auth/unauthorized-domain') {
-                 displayError = "Domínio não autorizado. Adicione seu domínio do Vercel na aba de 'Authorized Domains' no console do Firebase Authentication.";
+                 displayError = "Domínio não autorizado. Adicione o domínio www.agroconecta.online em Firebase -> Authentication -> Settings -> Authorized Domains.";
             }
 
             setErrorMsg(displayError);
-        } finally {
             setIsLoading(false);
         }
     };
