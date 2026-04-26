@@ -5,12 +5,20 @@ import { db } from '../services/databaseService';
 
 const LoginScreen: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const handleGoogleLogin = async () => {
         setIsLoading(true);
-        await db.user.login();
-        // The auth state change will be picked up by App.tsx so no need to do anything else here
-        setIsLoading(false);
+        setErrorMsg(null);
+        try {
+            await db.user.login();
+            // The auth state change will be picked up by App.tsx so no need to do anything else here
+        } catch (error: any) {
+            console.error("Login component error:", error);
+            setErrorMsg(error.message || "Erro ao conectar com Google. Se estiver no preview, tente abrir em uma nova aba.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -51,6 +59,14 @@ const LoginScreen: React.FC = () => {
                                 </>
                             )}
                         </button>
+                        {errorMsg && (
+                            <div className="mt-4 p-3 bg-red-900/50 border border-red-500 rounded-lg text-xs text-red-200 text-center">
+                                {errorMsg}
+                                <div className="mt-2 text-[10px]">
+                                    Está bloqueado? <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="underline font-bold">Abra em nova aba</a>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-8 text-center">

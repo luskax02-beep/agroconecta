@@ -77,6 +77,7 @@ export const db = {
                 await signInWithPopup(auth, provider);
              } catch (error) {
                 console.error("Login failed", error);
+                throw error;
              }
         },
         logout: async () => {
