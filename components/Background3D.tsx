@@ -3,13 +3,13 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const DataGlobe = ({ theme }: { theme: string }) => {
+const DataGlobe = () => {
   const mesh = useRef<THREE.Points>(null!);
   const count = 2500;
   
   // Decide colors based on theme
-  const accentColor = theme === 'green' ? new THREE.Color('#34d399') : new THREE.Color('#ffffff');
-  const baseColor = theme === 'green' ? new THREE.Color('#064e3b') : new THREE.Color('#3f3f46');
+  const accentColor = new THREE.Color('#ffffff');
+  const baseColor = new THREE.Color('#444444');
 
   const { positions, colors, sizes } = useMemo(() => {
     const p = new Float32Array(count * 3);
@@ -78,7 +78,7 @@ const ConnectionLines = () => {
     )
 }
 
-const Background3D: React.FC<{ theme: string }> = ({ theme }) => {
+const Background3D: React.FC = () => {
   return (
     <div className="fixed inset-0 w-full h-full z-0 pointer-events-none bg-app-bg transition-colors duration-500">
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-app-bg via-transparent to-app-bg pointer-events-none opacity-80" />
@@ -91,7 +91,7 @@ const Background3D: React.FC<{ theme: string }> = ({ theme }) => {
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]} 
       >
-        <DataGlobe theme={theme} />
+        <DataGlobe />
         <ConnectionLines />
       </Canvas>
     </div>

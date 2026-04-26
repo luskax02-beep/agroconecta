@@ -4,7 +4,7 @@ import { db } from './databaseService';
 // CONFIGURAÇÃO REAL DE PAGAMENTO
 export const KIRVANO_CONFIG = {
     // Link do Checkout (Produto)
-    CHECKOUT_URL: "https://kirvano.com/checkout/SEU_CODIGO_AQUI", 
+    CHECKOUT_URL: "https://pay.kirvano.com/8345334a-e421-42f3-9bec-c5d6c574a644", 
     
     // URL do seu Backend (Local ou Produção)
     // Se estiver rodando o server.js localmente, é http://localhost:3000

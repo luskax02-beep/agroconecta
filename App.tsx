@@ -37,7 +37,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe }) => (
-    <div className="w-full max-w-lg mx-auto bg-black/30 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/10 text-center animate-fade-in-up pointer-events-auto">
+    <div className="w-full max-w-lg mx-auto glass-panel glow-hover rounded-3xl p-8 text-center animate-fade-in-up pointer-events-auto">
         <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-glow-sm">
             <SparkleIcon className="w-8 h-8 text-white" />
         </div>
@@ -182,11 +182,11 @@ export default function App() {
     const canAnalyze = isSubscribed || promptCount < FREE_PROMPT_LIMIT;
 
     return (
-        <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden ${theme === 'green' ? 'theme-green' : ''}`}>
+        <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden`}>
             
             {/* Background 3D */}
             <div className={`fixed inset-0 z-0 transition-opacity duration-1000 ${previewUrl ? 'opacity-40' : 'opacity-100'}`}>
-                 <Background3D theme={theme} />
+                 <Background3D />
             </div>
             
             {showIntro ? (
@@ -354,8 +354,6 @@ export default function App() {
                     <SettingsModal
                         isOpen={isSettingsOpen}
                         onClose={() => setIsSettingsOpen(false)}
-                        currentTheme={theme}
-                        onThemeChange={handleThemeChange}
                     />
                 </>
             )}

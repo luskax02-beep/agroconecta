@@ -86,8 +86,8 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-black border border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="glass-panel glow-hover rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col relative">
                 
                 {notification && (
                     <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-2 rounded-full shadow-glow z-50 animate-fade-in-up font-bold text-sm">
@@ -121,24 +121,24 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Content */}
-                <div className="flex-grow overflow-y-auto p-6 bg-black">
+                <div className="flex-grow overflow-y-auto p-6 bg-transparent">
                     {activeTab === 'browse' && (
                         <div className="space-y-6">
                             <div className="relative">
-                                <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white" />
                                 <input 
                                     type="text" 
                                     placeholder="FILTRAR POR LOCALIZAÇÃO..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-sm placeholder-zinc-600 focus:border-white outline-none transition-all"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:border-white focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-4">
                                 {filteredListings.map(item => (
-                                    <div key={item.id} className="bg-zinc-900/50 rounded-xl border border-zinc-800 hover:border-white/30 transition-all group overflow-hidden flex flex-col">
-                                        <div className="h-24 bg-zinc-800 flex items-center justify-center relative">
+                                    <div key={item.id} className="glass-panel glow-hover rounded-2xl transition-all group overflow-hidden flex flex-col">
+                                        <div className="h-24 bg-white/5 flex items-center justify-center relative border-b border-white/10">
                                             <CowIcon className="w-8 h-8 text-zinc-600 group-hover:text-white transition-colors" />
                                             <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white border border-white/10">
                                                 {item.area} HA
@@ -169,34 +169,34 @@ const PastoConecta: React.FC<PastoConectaProps> = ({ isOpen, onClose }) => {
                     )}
 
                     {activeTab === 'create' && (
-                        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4 bg-zinc-900/30 p-8 rounded-xl border border-white/10">
+                        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4 glass-panel p-8 rounded-3xl">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Título</label>
-                                    <input required name="title" value={formData.title} onChange={handleInputChange} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Título</label>
+                                    <input required name="title" value={formData.title} onChange={handleInputChange} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Localização</label>
-                                    <input required name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Localização</label>
+                                    <input required name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Área (Ha)</label>
-                                    <input required name="area" type="number" value={formData.area} onChange={handleInputChange} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Área (Ha)</label>
+                                    <input required name="area" type="number" value={formData.area} onChange={handleInputChange} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Preço (R$)</label>
-                                    <input required name="price" type="number" value={formData.price} onChange={handleInputChange} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Preço (R$)</label>
+                                    <input required name="price" type="number" value={formData.price} onChange={handleInputChange} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Telefone</label>
-                                    <input required name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Telefone</label>
+                                    <input required name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Descrição</label>
-                                    <textarea required name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full px-4 py-2 bg-black border border-zinc-700 rounded text-white focus:border-white outline-none" />
+                                    <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Descrição</label>
+                                    <textarea required name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-white focus:bg-white/10 outline-none transition-all" />
                                 </div>
                             </div>
-                            <button type="submit" className="w-full py-3 bg-white text-black font-bold uppercase tracking-widest rounded hover:bg-zinc-200 transition-colors shadow-glow-sm">
+                            <button type="submit" className="w-full py-4 mt-4 bg-white text-black font-bold uppercase tracking-widest rounded-xl hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
                                 Publicar
                             </button>
                         </form>

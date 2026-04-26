@@ -245,7 +245,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             </div>
 
             {/* Diagnosis - Transparent High Contrast */}
-            <div className="bg-white/10 backdrop-blur-3xl rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden animate-fade-in-up border border-white/20" style={{animationDelay: '0ms'}}>
+            <div className="glass-panel glow-hover rounded-3xl overflow-hidden animate-fade-in-up" style={{animationDelay: '0ms'}}>
                 <div className="p-8 relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-app-accent/10 rounded-full blur-[50px] pointer-events-none"></div>
                     <h3 className="flex items-center text-xs font-bold uppercase tracking-[0.2em] mb-4 border-b border-white/10 pb-4 text-app-accent">
@@ -259,7 +259,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Symptoms - Card */}
-                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '150ms'}}>
+                <div className="glass-panel glow-hover rounded-3xl p-8 animate-fade-in-up transition-all" style={{animationDelay: '150ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
                         <span className="text-lg mr-3 text-white">📝</span> Evidências Encontradas
                     </h3>
@@ -278,7 +278,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                 </div>
 
                 {/* Prevention - Card */}
-                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/5 p-8 animate-fade-in-up transition-all hover:bg-black/30 hover:border-white/10" style={{animationDelay: '300ms'}}>
+                <div className="glass-panel glow-hover rounded-3xl p-8 animate-fade-in-up transition-all" style={{animationDelay: '300ms'}}>
                     <h3 className="flex items-center text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-6">
                         <span className="text-lg mr-3 text-white">🛡️</span> Prevenção
                     </h3>
@@ -301,10 +301,10 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 
             {/* Differential Diagnosis - Card */}
             {parsed.differential && (
-                <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-yellow-500/10 p-6 animate-fade-in-up transition-all hover:border-yellow-500/20 group relative overflow-hidden" style={{animationDelay: '400ms'}}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <h3 className="flex items-center text-yellow-500/80 font-mono text-[10px] uppercase tracking-widest mb-6 relative z-10">
-                        <span className="text-lg mr-3 text-yellow-500">🔬</span> Diagnóstico Diferencial
+                <div className="glass-panel glow-hover rounded-3xl p-6 animate-fade-in-up transition-all group relative overflow-hidden" style={{animationDelay: '400ms'}}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+                    <h3 className="flex items-center text-zinc-300 font-mono text-[10px] uppercase tracking-widest mb-6 relative z-10">
+                        <span className="text-lg mr-3 text-white">🔬</span> Diagnóstico Diferencial
                     </h3>
                     <div className="text-zinc-300 leading-relaxed font-light whitespace-pre-line relative z-10 text-sm">
                         {formatText(parsed.differential)}
@@ -313,7 +313,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
             )}
 
              {/* Treatment (Plano de Ação) */}
-            <div className="bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 animate-fade-in-up transition-all hover:bg-white/10" style={{animationDelay: '500ms'}}>
+            <div className="glass-panel glow-hover rounded-3xl animate-fade-in-up transition-all" style={{animationDelay: '500ms'}}>
                 <div className="p-8">
                      <h3 className="flex items-center text-xl font-light text-white mb-6">
                         <span className="text-2xl mr-4">💊</span> Plano de Ação
@@ -323,7 +323,7 @@ const AnalysisDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
                             const cleanLine = line.replace(/^[\*\-]\s*/, '').trim();
                             if (!cleanLine) return null;
                             return (
-                                <div key={i} className="flex items-center bg-black/20 p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">
+                                <div key={i} className="flex items-center glass-panel p-4 rounded-xl border border-white/5 hover:border-app-accent/20 transition-colors">
                                     <span className="text-app-accent mr-4 text-xl font-thin">|</span>
                                     <span className="text-zinc-200 leading-relaxed font-light text-sm">{formatText(cleanLine)}</span>
                                 </div>

@@ -60,13 +60,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-black border border-white/20 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="glass-panel glow-hover rounded-3xl max-w-md w-full overflow-hidden relative flex flex-col max-h-[90vh]">
                 
-                <div className="bg-zinc-900/50 p-6 text-center border-b border-white/5 relative overflow-hidden">
-                     <div className="absolute inset-0 bg-app-accent/5 pointer-events-none"></div>
+                <div className="bg-black/40 backdrop-blur-md p-6 text-center border-b border-white/10 relative overflow-hidden">
+                     <div className="absolute inset-0 bg-white/5 pointer-events-none"></div>
                      <div className="relative z-10 flex flex-col items-center">
-                        <SparkleIcon className="w-8 h-8 mb-3 text-app-accent animate-pulse" />
+                        <SparkleIcon className="w-8 h-8 mb-3 text-white animate-pulse" />
                         <h2 className="text-xl font-bold uppercase tracking-widest text-white">
                             {view === 'success' ? 'Acesso Liberado' : (view === 'config' ? 'Configuração' : 'AgroConecta Premium')}
                         </h2>
@@ -75,7 +75,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
                      {view === 'offer' && (
                          <button 
                             onClick={() => setView('config')}
-                            className="absolute top-4 right-4 text-zinc-600 hover:text-white transition-colors"
+                            className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
                             title="Dados de Integração"
                          >
                              <SettingsIcon className="w-5 h-5" />
@@ -87,7 +87,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
                     {view === 'offer' && (
                         <div className="space-y-6">
                             <div className="text-center space-y-2">
-                                <p className="text-zinc-400 text-sm font-light">
+                                <p className="text-zinc-300 text-sm font-light">
                                     Desbloqueie diagnósticos ilimitados, análises 3D avançadas e relatórios PDF.
                                 </p>
                                 <div className="text-3xl font-light text-white my-4">
@@ -97,7 +97,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
 
                             <button 
                                 onClick={handleOpenCheckout}
-                                className="w-full group relative overflow-hidden rounded-xl bg-[#ff5a1f] px-8 py-4 text-white shadow-[0_0_20px_rgba(255,90,31,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,90,31,0.5)]"
+                                className="w-full group relative overflow-hidden rounded-xl bg-white px-8 py-4 text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
                             >
                                 <div className="relative z-10 flex items-center justify-center font-bold uppercase tracking-widest text-xs">
                                     Ir para Pagamento Seguro
@@ -170,7 +170,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
 
                     {view === 'success' && (
                         <div className="text-center py-6 animate-fade-in-up">
-                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,255,255,0.4)]">
                                 <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
                                 </svg>
