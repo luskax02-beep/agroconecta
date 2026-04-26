@@ -15,7 +15,13 @@ const LoginScreen: React.FC = () => {
             // The auth state change will be picked up by App.tsx so no need to do anything else here
         } catch (error: any) {
             console.error("Login component error:", error);
-            setErrorMsg(error.message || "Erro ao conectar com Google. Se estiver no preview, tente abrir em uma nova aba.");
+            
+            let displayError = error.message || "Erro ao conectar com Google. Se estiver no preview, tente abrir em uma nova aba.";
+            if (error.code === 'auth/unauthorized-domain') {
+                 displayError = "Domínio não autorizado. Adicione seu domínio do Vercel na aba de 'Authorized Domains' no console do Firebase Authentication.";
+            }
+
+            setErrorMsg(displayError);
         } finally {
             setIsLoading(false);
         }

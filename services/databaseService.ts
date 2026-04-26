@@ -75,8 +75,19 @@ export const db = {
              const provider = new GoogleAuthProvider();
              try {
                 await signInWithPopup(auth, provider);
-             } catch (error) {
-                console.error("Login failed", error);
+             } catch (error: any) {
+                console.error("Login failed (Popup)", error);
+                if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/unauthorized-domain' || error.code === 'auth/internal-error') {
+                    console.log("Tentando login com redirecionamento (signInWithRedirect)...");
+                    try {
+                        const { signInWithRedirect } = await import('firebase/auth');
+                        await signInWithRedirect(auth, provider);
+                        return;
+                    } catch (redirectError) {
+                        console.error("Login com redirecionamento falhou", redirectError);
+                        throw redirectError;
+                    }
+                }
                 throw error;
              }
         },
