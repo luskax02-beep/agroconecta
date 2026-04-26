@@ -86,24 +86,6 @@ export default function App() {
     });
 
     useEffect(() => {
-        const checkRedirect = async () => {
-             try {
-                 const { getRedirectResult } = await import('firebase/auth');
-                 const result = await getRedirectResult(auth);
-                 if (result) {
-                     console.log("Redirect success:", result.user.email);
-                 }
-             } catch (error: any) {
-                 console.error("Redirect error catch:", error);
-                 if (error.code === 'auth/unauthorized-domain') {
-                     setError("Acesso negado: domínio Vercel não autorizado no painel do Firebase.");
-                 } else {
-                     setError("Erro no login: " + error.message);
-                 }
-             }
-        };
-        checkRedirect();
-
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setIsAuthenticated(true);

@@ -72,14 +72,34 @@ export const db = {
             return currentUserId !== null;
         },
         login: async () => {
+             const provider = new GoogleAuthProvider();
+             provider.setCustomParameters({
+                 prompt: 'select_account'
+             });
              try {
-                const { GoogleAuthProvider, signInWithRedirect } = await import('firebase/auth');
-                const provider = new GoogleAuthProvider();
-                console.log("Iniciando login com redirecionamento...");
-                await signInWithRedirect(auth, provider);
+                const { signInWithPopup } = await import('firebase/auth');
+                await signInWithPopup(auth, provider);
              } catch (error: any) {
-                console.error("Login (Redirect) failed:", error);
+                console.error("Login failed:", error);
                 throw error;
+             }
+        },
+        loginWithEmail: async (email: string, password: string) => {
+             try {
+                 const { signInWithEmailAndPassword } = await import('firebase/auth');
+                 await signInWithEmailAndPassword(auth, email, password);
+             } catch (error: any) {
+                 console.error("Email login failed", error);
+                 throw error;
+             }
+        },
+        registerWithEmail: async (email: string, password: string) => {
+             try {
+                 const { createUserWithEmailAndPassword } = await import('firebase/auth');
+                 await createUserWithEmailAndPassword(auth, email, password);
+             } catch (error: any) {
+                 console.error("Email register failed", error);
+                 throw error;
              }
         },
         logout: async () => {
