@@ -1,102 +1,86 @@
-
-// @ts-nocheck
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, BakeShadows } from '@react-three/drei';
 import * as THREE from 'three';
 
-const DataGlobe = () => {
-  const mesh = useRef<THREE.Points>(null!);
-  const count = 2500;
+const FloatingLeaves = ({ count = 30 }) => {
+  const mesh = useRef<THREE.InstancedMesh>(null);
   
-  // Decide colors based on theme
-  const accentColor = new THREE.Color('#ffffff');
-  const baseColor = new THREE.Color('#444444');
-
-  const { positions, colors, sizes } = useMemo(() => {
-    const p = new Float32Array(count * 3);
-    const c = new Float32Array(count * 3);
-    const s = new Float32Array(count);
-
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  
+  const particles = useMemo(() => {
+    const temp = [];
     for (let i = 0; i < count; i++) {
-        const phi = Math.acos(-1 + (2 * i) / count);
-        const theta = Math.sqrt(count * Math.PI) * phi;
-        const r = 10; 
-
-        p[i * 3] = r * Math.cos(theta) * Math.sin(phi);
-        p[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
-        p[i * 3 + 2] = r * Math.cos(phi);
-
-        const isHighlight = Math.random() > 0.95;
-        const color = isHighlight ? accentColor : baseColor;
-
-        c[i * 3] = color.r;
-        c[i * 3 + 1] = color.g;
-        c[i * 3 + 2] = color.b;
-
-        s[i] = isHighlight ? Math.random() * 0.15 + 0.05 : 0.05;
+      const t = Math.random() * 100;
+      const factor = 10 + Math.random() * 80;
+      const speed = 0.005 + Math.random() / 300;
+      const xFactor = -30 + Math.random() * 60;
+      const yFactor = -20 + Math.random() * 50;
+      const zFactor = -30 + Math.random() * 60;
+      temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 });
     }
-    return { positions: p, colors: c, sizes: s };
-  }, [count, accentColor, baseColor]);
+    return temp;
+  }, [count]);
+
+  const [introFinished, setIntroFinished] = useState(false);
 
   useFrame((state) => {
-    if (mesh.current) {
-        mesh.current.rotation.y = state.clock.getElapsedTime() * 0.05;
-        mesh.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.1) * 0.1;
-    }
+    if (!mesh.current) return;
+    
+    // Smooth intro animation scaling
+    const introScale = introFinished ? 1 : Math.min(1, state.clock.elapsedTime * 0.5);
+    if (introScale >= 1 && !introFinished) setIntroFinished(true);
+
+    particles.forEach((particle, i) => {
+      let { factor, speed, xFactor, yFactor, zFactor } = particle;
+      particle.t += speed / 2;
+      const t = particle.t;
+      
+      const a = Math.cos(t) + Math.sin(t * 1) / 10;
+      const b = Math.sin(t) + Math.cos(t * 2) / 10;
+      const s = Math.cos(t) * introScale;
+      
+      dummy.position.set(
+        (particle.mx / 10) * a + xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
+        (particle.my / 10) * b + yFactor + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
+        (particle.my / 10) * b + zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+      );
+      dummy.scale.set(s, s, s);
+      dummy.rotation.set(s * 3, s * 4, s * 3);
+      dummy.updateMatrix();
+      
+      mesh.current!.setMatrixAt(i, dummy.matrix);
+    });
+    mesh.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <points ref={mesh}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} />
-        <bufferAttribute attach="attributes-size" count={sizes.length} array={sizes} itemSize={1} />
-      </bufferGeometry>
-      <pointsMaterial size={0.1} vertexColors={true} transparent={true} opacity={0.6} sizeAttenuation={true} blending={THREE.AdditiveBlending} />
-    </points>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]} castShadow receiveShadow>
+       <sphereGeometry args={[0.3, 12, 12]} />
+       <meshStandardMaterial color="#486b44" roughness={0.6} metalness={0.1} />
+    </instancedMesh>
   );
 };
 
-const ConnectionLines = () => {
-    const linesRef = useRef<THREE.Group>(null!);
-    useFrame((state) => {
-        if (linesRef.current) {
-             linesRef.current.rotation.y = state.clock.getElapsedTime() * 0.05;
-             linesRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.1) * 0.1;
-        }
-    });
-    return (
-        <group ref={linesRef}>
-             <mesh rotation={[0,0,0]}>
-                <ringGeometry args={[10.1, 10.15, 64]} />
-                <meshBasicMaterial color="#ffffff" opacity={0.05} transparent side={THREE.DoubleSide} />
-             </mesh>
-             <mesh rotation={[1,1,0]}>
-                <ringGeometry args={[10.1, 10.15, 64]} />
-                <meshBasicMaterial color="#ffffff" opacity={0.05} transparent side={THREE.DoubleSide} />
-             </mesh>
-        </group>
-    )
-}
-
-const Background3D: React.FC = () => {
+export default function Background3D() {
   return (
-    <div className="fixed inset-0 w-full h-full z-0 pointer-events-none bg-app-bg transition-colors duration-500">
-      <div className="absolute inset-0 z-10 bg-gradient-to-t from-app-bg via-transparent to-app-bg pointer-events-none opacity-80" />
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent_0%,var(--app-bg)_100%)] pointer-events-none opacity-50" />
-      
-      <Canvas
-        camera={{ position: [0, 0, 25], fov: 45 }}
-        style={{ pointerEvents: 'auto' }}
-        className="bg-transparent"
-        gl={{ alpha: true, antialias: true }}
-        dpr={[1, 2]} 
-      >
-        <DataGlobe />
-        <ConnectionLines />
+    <div className="absolute inset-0 z-0 pointer-events-none opacity-50" style={{ mixBlendMode: 'screen' }}>
+      <Canvas camera={{ position: [0, 0, 15], fov: 60 }} shadows dpr={[1, 1.5]} gl={{ antialias: false }}>
+        <ambientLight intensity={0.4} />
+        <directionalLight 
+          position={[10, 10, 5]} 
+          intensity={1} 
+          castShadow 
+          shadow-mapSize={[512, 512]}
+        />
+        <Float speed={1.2} rotationIntensity={0.5} floatIntensity={1.5}>
+          <mesh position={[0, -5, -10]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <planeGeometry args={[100, 100, 16, 16]} />
+            <meshStandardMaterial color="#1a3d16" wireframe opacity={0.15} transparent />
+          </mesh>
+        </Float>
+        <FloatingLeaves count={50} />
       </Canvas>
     </div>
   );
-};
-
-export default Background3D;
+}

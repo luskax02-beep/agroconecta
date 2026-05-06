@@ -1,299 +1,143 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FlaskConical, Sprout, ScanLine, Map as MapIcon, ChevronRight } from 'lucide-react';
 
-// @ts-nocheck
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Stars, PerspectiveCamera } from '@react-three/drei';
-import * as THREE from 'three';
-import SparkleIcon from './icons/SparkleIcon';
-import CameraIcon from './icons/CameraIcon';
-import MapPinIcon from './icons/MapPinIcon';
-import GlobeIcon from './icons/GlobeIcon';
+const PHASES = [
+  { id: 'soil', text: 'Análise de Solo', icon: FlaskConical },
+  { id: 'crop', text: 'Cultura em Crescimento', icon: Sprout },
+  { id: 'scan', text: 'Scanner de Área', icon: ScanLine },
+  { id: 'map', text: 'Mapeamento 3D', icon: MapIcon },
+];
 
-// --- 3D Components ---
+export default function IntroAnimation({ onComplete }: { onComplete: () => void }) {
+  const [currentPhase, setCurrentPhase] = useState(0);
 
-const BiomassParticles = () => {
-    const count = 300;
-    const mesh = useRef<THREE.Points>(null!);
+  useEffect(() => {
+    if (currentPhase >= PHASES.length) {
+      const timer = setTimeout(() => onComplete(), 600); 
+      return () => clearTimeout(timer);
+    }
     
-    const { positions, colors } = useMemo(() => {
-        const positions = new Float32Array(count * 3);
-        const colors = new Float32Array(count * 3);
-        const color = new THREE.Color('#4ade80'); // Green-400
+    const timer = setTimeout(() => {
+      setCurrentPhase(prev => prev + 1);
+    }, 2200); // 2.2s per phase
 
-        for (let i = 0; i < count; i++) {
-            const r = (Math.random() - 0.5) * 5;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-            
-            positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-            positions[i * 3 + 2] = r * Math.cos(phi);
+    return () => clearTimeout(timer);
+  }, [currentPhase, onComplete]);
 
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-        }
-        return { positions, colors };
-    }, []);
+  // If currentPhase is out of bounds, we might be transitioning out.
+  const phase = PHASES[Math.min(currentPhase, PHASES.length - 1)];
+  const Icon = phase.icon;
 
-    useFrame((state) => {
-        if (mesh.current) {
-            // Slower rotation for a calmer effect
-            mesh.current.rotation.y = state.clock.getElapsedTime() * 0.15;
-            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.08;
-            const s = 1 + Math.sin(state.clock.getElapsedTime() * 1.5) * 0.1;
-            mesh.current.scale.set(s, s, s);
-        }
-    });
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, filter: "blur(20px)", scale: 1.1 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#1a3d16] overflow-hidden"
+    >
+      {/* Glassmorphism subtle overlay */}
+      <div className="absolute inset-0 backdrop-blur-[100px] bg-[#1a3d16]/30 z-0 pointer-events-none" />
 
-    return (
-        <points ref={mesh}>
-            <bufferGeometry>
-                <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
-                <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
-            </bufferGeometry>
-            <pointsMaterial size={0.15} vertexColors transparent opacity={0.8} sizeAttenuation />
-        </points>
-    );
-};
-
-const ScannerCube = () => {
-    const group = useRef<THREE.Group>(null!);
-    const scanLine = useRef<THREE.Mesh>(null!);
-
-    useFrame((state) => {
-        if (group.current) {
-            // Slower rotation
-            group.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.4) * 0.15;
-            group.current.rotation.y += 0.008;
-        }
-        if (scanLine.current) {
-            // Slower scan line movement
-            scanLine.current.position.y = Math.sin(state.clock.getElapsedTime() * 1.5) * 1.5;
-        }
-    });
-
-    return (
-        <group ref={group}>
-            <mesh>
-                <boxGeometry args={[2.5, 3.5, 0.2]} />
-                <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.1} />
-            </mesh>
-            <mesh ref={scanLine} rotation={[Math.PI/2, 0, 0]}>
-                <planeGeometry args={[3, 3]} />
-                <meshBasicMaterial color="#4ade80" transparent opacity={0.5} side={THREE.DoubleSide} />
-            </mesh>
-             {/* Corners */}
-            <group position={[0,0,0.1]}>
-                 <mesh position={[-1.2, 1.7, 0]}>
-                    <planeGeometry args={[0.5, 0.05]} />
-                    <meshBasicMaterial color="white" />
-                 </mesh>
-                 <mesh position={[-1.4, 1.5, 0]} rotation={[0,0,Math.PI/2]}>
-                    <planeGeometry args={[0.5, 0.05]} />
-                    <meshBasicMaterial color="white" />
-                 </mesh>
-            </group>
-        </group>
-    );
-};
-
-const TerrainMesh = () => {
-    const mesh = useRef<THREE.Mesh>(null!);
-    
-    useFrame((state) => {
-        if(mesh.current) {
-            mesh.current.rotation.z += 0.0015; // Slightly slower
-        }
-    });
-
-    const geometry = useMemo(() => {
-        const geo = new THREE.PlaneGeometry(8, 8, 32, 32);
-        const pos = geo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const z = Math.sin(x * 0.8) * Math.cos(y * 0.8) * 0.5 + Math.random() * 0.1;
-            pos.setZ(i, z);
-        }
-        geo.computeVertexNormals();
-        return geo;
-    }, []);
-
-    return (
-        <group rotation={[-Math.PI / 2.5, 0, 0]}>
-             <mesh ref={mesh} geometry={geometry}>
-                <meshStandardMaterial color="#3f3f46" wireframe />
-             </mesh>
-             <mesh position={[0,0,-0.5]}>
-                 <circleGeometry args={[4, 32]} />
-                 <meshBasicMaterial color="#000000" transparent opacity={0.8} />
-             </mesh>
-        </group>
-    );
-};
-
-const SatelliteGlobe = () => {
-    const group = useRef<THREE.Group>(null!);
-    
-    useFrame((state) => {
-        if (group.current) {
-             group.current.rotation.y += 0.004; // Slightly slower
-        }
-    });
-
-    return (
-        <group ref={group}>
-            <mesh>
-                <sphereGeometry args={[2, 32, 32]} />
-                <meshStandardMaterial color="#18181b" wireframe transparent opacity={0.3} emissive="#27272a" />
-            </mesh>
-            <mesh>
-                <sphereGeometry args={[1.9, 32, 32]} />
-                <meshBasicMaterial color="#000000" />
-            </mesh>
-            {/* Satellite */}
-            <group rotation={[0,0,Math.PI/4]}>
-                <mesh position={[2.8, 0, 0]}>
-                    <boxGeometry args={[0.2, 0.2, 0.2]} />
-                    <meshBasicMaterial color="white" />
-                </mesh>
-                <mesh rotation={[Math.PI/2,0,0]}>
-                     <ringGeometry args={[2.8, 2.82, 64]} />
-                     <meshBasicMaterial color="white" transparent opacity={0.2} side={THREE.DoubleSide} />
-                </mesh>
-            </group>
-        </group>
-    );
-};
-
-// --- Main Intro Component ---
-
-interface IntroAnimationProps {
-    onFinish: () => void;
-}
-
-const IntroAnimation: React.FC<IntroAnimationProps> = ({ onFinish }) => {
-    const [phase, setPhase] = useState(0); 
-
-    useEffect(() => {
-        // Timings ajustados para garantir leitura:
-        // Phase 0: 0 -> 3500 (3.5s)
-        // Phase 1: 3500 -> 7000 (3.5s)
-        // Phase 2: 7000 -> 10500 (3.5s)
-        // Phase 3 (Logo): 10500 -> 18500 (8.0s) - Estendido significativamente
-        const timings = [0, 3500, 7000, 10500, 18500];
-        
-        const timeouts = timings.map((time, index) => {
-            if (index === 0) return null;
-            return setTimeout(() => {
-                if (index === 4) {
-                    onFinish();
-                } else {
-                    setPhase(index);
-                }
-            }, time);
-        });
-
-        return () => {
-            timeouts.forEach(t => t && clearTimeout(t));
-        };
-    }, [onFinish]);
-
-    return (
-        <div 
-            className="fixed inset-0 z-[100] bg-app-bg flex items-center justify-center overflow-hidden font-mono cursor-pointer transition-colors duration-1000"
-            onClick={onFinish}
+      <div className="flex-1 flex flex-col items-center justify-center pt-10 relative z-10 w-full max-w-lg mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="mb-20"
         >
-            {/* 3D Scene Layer */}
-            <div className="absolute inset-0 z-0">
-                <Canvas>
-                    <PerspectiveCamera makeDefault position={[0, 0, 8]} />
-                    <ambientLight intensity={0.5} />
-                    <pointLight position={[10, 10, 10]} intensity={1} />
-                    <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-                    
-                    {/* Slower float speed */}
-                    <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.4}>
-                        {phase === 0 && <BiomassParticles />}
-                        {phase === 1 && <ScannerCube />}
-                        {phase === 2 && <TerrainMesh />}
-                        {phase === 3 && <SatelliteGlobe />}
-                    </Float>
-                </Canvas>
-            </div>
+           <h1 className="text-2xl font-light tracking-[0.2em] text-[#e7ecd9] opacity-90">
+              AGRO<span className="font-bold">CONECTA</span>
+           </h1>
+        </motion.div>
 
-            {/* Skip Text */}
-            <div className="absolute bottom-8 right-8 z-50 animate-pulse text-app-muted text-[10px] uppercase tracking-widest border border-app-border px-3 py-1 rounded-full bg-app-bg/50 backdrop-blur-sm">
-                Toque para pular
-            </div>
-
-            {/* Overlay UI Layer - slower transitions (duration-1000) */}
-            <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none w-full max-w-md text-center p-6">
+        <AnimatePresence mode="wait">
+          {currentPhase < PHASES.length && (
+            <motion.div
+              key={phase.id}
+              initial={{ opacity: 0, y: 30, scale: 0.95, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -30, scale: 0.95, filter: "blur(10px)" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center h-64 w-full"
+            >
+              <div className="relative mb-10 w-48 h-48 flex items-center justify-center">
+                <motion.div 
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 0.15 }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="absolute inset-0 bg-[#e7ecd9] rounded-full blur-2xl" 
+                />
                 
-                {/* Phase 0 Text */}
-                <div className={`transition-all duration-1000 absolute ${phase === 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                     <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
-                        <div className="flex flex-col items-center gap-2">
-                             <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
-                                <SparkleIcon className="w-6 h-6 text-green-400" />
-                             </div>
-                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Biomassa</h2>
-                             <div className="h-[1px] w-12 bg-green-500/50 my-1"></div>
-                             <p className="text-[10px] text-green-300 uppercase tracking-[0.3em] animate-pulse">Detectando Vida</p>
-                        </div>
-                     </div>
-                </div>
+                {/* Orbital rings */}
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 rounded-full border border-[#e7ecd9]/20 border-t-[#e7ecd9]/60"
+                />
+                <motion.div 
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-4 rounded-full border border-[#e7ecd9]/10 border-b-[#c5d1ae]/50"
+                />
 
-                {/* Phase 1 Text */}
-                <div className={`transition-all duration-1000 absolute ${phase === 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
-                         <div className="flex flex-col items-center gap-2">
-                             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
-                                <CameraIcon className="w-6 h-6 text-blue-400" />
-                             </div>
-                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Scanner IA</h2>
-                             <div className="h-[1px] w-12 bg-blue-500/50 my-1"></div>
-                             <p className="text-[10px] text-blue-300 uppercase tracking-[0.3em] animate-pulse">Analisando Espectro</p>
-                        </div>
-                    </div>
-                </div>
+                <motion.div
+                  animate={{ 
+                    y: [0, -8, 0],
+                  }}
+                  transition={{ 
+                    duration: 3, 
+                    ease: "easeInOut",
+                    repeat: Infinity
+                  }}
+                >
+                  <Icon className="w-20 h-20 text-[#e7ecd9] relative z-10 drop-shadow-[0_0_15px_rgba(231,236,217,0.5)]" strokeWidth={1.5} />
+                </motion.div>
+              </div>
+              
+              <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-[#e7ecd9] text-center px-6 leading-tight">
+                {phase.text}
+              </h2>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                {/* Phase 2 Text */}
-                <div className={`transition-all duration-1000 absolute ${phase === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <div className="bg-app-card/60 backdrop-blur-md p-4 rounded-2xl border border-app-border/30 shadow-2xl">
-                         <div className="flex flex-col items-center gap-2">
-                             <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-2">
-                                <MapPinIcon className="w-6 h-6 text-orange-400" />
-                             </div>
-                             <h2 className="text-xl font-light text-white tracking-widest uppercase">Topografia</h2>
-                             <div className="h-[1px] w-12 bg-orange-500/50 my-1"></div>
-                             <p className="text-[10px] text-orange-300 uppercase tracking-[0.3em] animate-pulse">Mapeando Terreno</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Phase 3 Text */}
-                <div className={`transition-all duration-1000 absolute ${phase === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <div className="bg-app-card/60 backdrop-blur-md p-6 rounded-3xl border border-app-border/30 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                        <div className="flex flex-col items-center gap-4">
-                             <div className="relative">
-                                <GlobeIcon className="w-16 h-16 text-white opacity-80" />
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-black animate-pulse"></div>
-                             </div>
-                             <div>
-                                <h1 className="text-4xl font-light text-white tracking-tighter">
-                                    AGRO<span className="font-bold">CONECTA</span>
-                                </h1>
-                                <p className="text-[10px] text-zinc-400 uppercase tracking-[0.5em] mt-2">Sistema Conectado</p>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-
+        {/* Progress bar */}
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex items-center gap-3">
+          {PHASES.map((p, i) => (
+            <div key={p.id} className="relative w-12 sm:w-16 h-[3px] bg-[#e7ecd9]/10 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: "0%" }}
+                animate={{ width: currentPhase > i ? "100%" : currentPhase === i ? "100%" : "0%" }}
+                transition={{ duration: currentPhase === i ? 2.2 : 0.3, ease: "linear" }}
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#c5d1ae] to-[#e7ecd9] shadow-[0_0_10px_rgba(231,236,217,0.5)]"
+              />
             </div>
+          ))}
         </div>
-    );
-};
+      </div>
 
-export default IntroAnimation;
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
+        onClick={onComplete}
+        className="absolute bottom-8 right-4 sm:right-10 flex items-center gap-2 text-[#c5d1ae] hover:text-[#e7ecd9] transition-all group px-6 py-3 rounded-full hover:bg-white/5 cursor-pointer z-50 backdrop-blur-sm border border-transparent hover:border-[#c5d1ae]/20"
+      >
+        <span className="text-sm font-medium tracking-[0.15em] uppercase">Pular</span>
+        <ChevronRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+      </motion.button>
+
+      {/* Decorative background lights */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.15 }}
+        transition={{ duration: 2 }}
+        className="absolute inset-0 pointer-events-none z-[-1]"
+      >
+        <div className="absolute top-[-20%] right-[-10%] w-[30rem] sm:w-[50rem] h-[30rem] sm:h-[50rem] bg-[#e7ecd9] rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[20rem] sm:w-[40rem] h-[20rem] sm:h-[40rem] bg-[#486b44] rounded-full blur-[150px]" />
+      </motion.div>
+    </motion.div>
+  );
+}

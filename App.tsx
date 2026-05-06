@@ -1,400 +1,242 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { analyzeCrop } from './services/geminiService';
-import { db } from './services/databaseService';
-import { auth } from './firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
-import { checkPaymentRedirect } from './services/kirvanoService';
-import { AnalysisResult, UserProfile as UserProfileType } from './types';
-import SparkleIcon from './components/icons/SparkleIcon';
-import UserIcon from './components/icons/UserIcon';
-import CowIcon from './components/icons/CowIcon';
-import SettingsIcon from './components/icons/SettingsIcon';
-import CheckoutModal from './components/CheckoutModal';
-import UserProfile from './components/UserProfile';
-import TutorialModal from './components/TutorialModal';
-import SettingsModal from './components/SettingsModal';
-import Footer from './components/Footer';
+import React, { Suspense, useState } from 'react';
+import { Leaf, FileSearch, Sprout, Tractor, ArrowRight, CheckCircle2, Phone, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Background3D from './components/Background3D';
-import PastoConecta from './components/PastoConecta';
 import IntroAnimation from './components/IntroAnimation';
-import ImageSelector from './components/ImageSelector';
-import AnalysisDisplay from './components/AnalysisDisplay';
-import LoginScreen from './components/LoginScreen';
-
-const FREE_PROMPT_LIMIT = 3;
-
-const LoadingSpinner: React.FC = () => (
-    <div className="flex flex-col items-center justify-center space-y-8 mt-12 animate-fade-in relative z-20 pointer-events-auto">
-        <div className="relative">
-            <div className="w-24 h-24 border border-app-accent/30 rounded-full backdrop-blur-sm"></div>
-            <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-app-accent rounded-full animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2 h-2 bg-app-accent rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)] animate-pulse"></div>
-            </div>
-        </div>
-        <p className="text-xs font-mono text-app-text/70 uppercase tracking-[0.2em] animate-pulse">
-            Processando Imagem...
-        </p>
-    </div>
-);
-
-const SubscriptionPrompt: React.FC<{ onSubscribe: () => void }> = ({ onSubscribe }) => (
-    <div className="w-full max-w-lg mx-auto glass-panel glow-hover rounded-3xl p-8 text-center animate-fade-in-up pointer-events-auto">
-        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-glow-sm">
-            <SparkleIcon className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-light text-white mb-3">Atualização Necessária</h2>
-        <p className="text-zinc-400 mb-8 font-light text-sm">
-            Limite de créditos atingido. Ative o protocolo Premium para acesso ilimitado.
-        </p>
-        <button
-            onClick={onSubscribe}
-            className="w-full group relative overflow-hidden rounded-xl bg-white px-8 py-4 text-black shadow-glow transition-all hover:scale-[1.02]"
-        >
-            <span className="relative z-10 flex items-center justify-center text-sm font-bold uppercase tracking-widest">
-                Atualizar Sistema
-                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-            </span>
-        </button>
-    </div>
-);
 
 export default function App() {
-    const [showIntro, setShowIntro] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [authLoading, setAuthLoading] = useState(true);
+  const [showIntro, setShowIntro] = useState(true);
 
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-    
-    // Theme State
-    const [theme, setTheme] = useState<string>(() => localStorage.getItem('agroconecta_theme') || 'default');
+  return (
+    <div className="min-h-screen bg-[#e7ecd9] text-stone-900 font-sans selection:bg-[#1a3d16] selection:text-[#e7ecd9]">
+      <AnimatePresence>
+        {showIntro && <IntroAnimation onComplete={() => setShowIntro(false)} />}
+      </AnimatePresence>
 
-    const [userProfile, setUserProfile] = useState<UserProfileType>({
-        farmName: '',
-        location: '',
-        crops: [],
-        history: [],
-        isSubscribed: false,
-        promptCount: 0
-    });
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                setIsAuthenticated(true);
-                const profile = await db.user.getProfile();
-                setUserProfile(profile);
-            } else {
-                setIsAuthenticated(false);
-                setUserProfile({
-                    farmName: '',
-                    location: '',
-                    crops: [],
-                    history: [],
-                    isSubscribed: false,
-                    promptCount: 0
-                });
-            }
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
-    const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
-    const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
-    const [isPastoConectaOpen, setIsPastoConectaOpen] = useState<boolean>(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-
-    // Check for payment return on mount
-    useEffect(() => {
-        const justPaid = checkPaymentRedirect();
-        if (justPaid) {
-            setUserProfile(prev => ({ ...prev, isSubscribed: true }));
-            db.user.updateProfile({ ...userProfile, isSubscribed: true });
-            setIsCheckoutOpen(true); // Open modal to show success state
-        }
-    }, [userProfile]);
-
-    const handleThemeChange = (newTheme: string) => {
-        setTheme(newTheme);
-        localStorage.setItem('agroconecta_theme', newTheme);
-    };
-
-    const handleUpdateProfile = (newProfile: UserProfileType) => {
-        setUserProfile(newProfile);
-        db.user.updateProfile(newProfile);
-    };
-
-    // Main Analysis Logic
-    const performAnalysis = async (file: File) => {
-        if (!file) return;
-
-        // Check limits before starting
-        const currentCount = userProfile.promptCount || 0;
-        const userIsSubscribed = userProfile.isSubscribed || false;
-
-        if (!userIsSubscribed && currentCount >= FREE_PROMPT_LIMIT) {
-            setError("Limite de crédito atingido. Atualização necessária.");
-            handleOpenCheckout(); 
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        setAnalysisResult(null);
-
-        try {
-            const result = await analyzeCrop(file, userProfile.location);
-            setAnalysisResult(result);
-            
-            if (!userIsSubscribed) {
-                const newCount = currentCount + 1;
-                const newProfile = { ...userProfile, promptCount: newCount };
-                setUserProfile(newProfile);
-                await db.user.updateProfile(newProfile);
-            }
-
-            await db.user.addHistoryItem(result);
-            const updatedProfile = await db.user.getProfile();
-            setUserProfile(updatedProfile); 
-
-        } catch (e: any) {
-            console.error(e);
-            if (e.message && (e.message.includes('403') || e.message.includes('API key'))) {
-                 setError("Erro do Sistema: Configuração de API Inválida.");
-            } else {
-                 setError("Falha na análise. Por favor, tente novamente.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleImageSelect = useCallback((file: File) => {
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setAnalysisResult(null);
-        setError(null);
-        
-        // AUTO-START ANALYSIS
-        performAnalysis(file);
-    }, [userProfile]); // Added userProfile to dependency array since it's used inside
-
-    const handleClear = () => {
-        setImageFile(null);
-        setPreviewUrl(null);
-        setAnalysisResult(null);
-        setError(null);
-        setLoading(false);
-    };
-
-    const handleOpenCheckout = () => {
-        setIsCheckoutOpen(true);
-    };
-
-    const handlePaymentSuccess = () => {
-        const updatedProfile = { ...userProfile, isSubscribed: true };
-        setUserProfile(updatedProfile);
-        db.user.updateProfile(updatedProfile);
-        setError(null);
-        setTimeout(() => {
-            setIsCheckoutOpen(false);
-        }, 1500);
-    };
-
-    if (authLoading) {
-        return <div className="min-h-screen bg-app-bg flex items-center justify-center"><LoadingSpinner /></div>;
-    }
-
-    const promptsRemaining = FREE_PROMPT_LIMIT - (userProfile.promptCount || 0);
-    const canAnalyze = userProfile.isSubscribed || (userProfile.promptCount || 0) < FREE_PROMPT_LIMIT;
-
-    return (
-        <div className={`min-h-screen bg-app-bg text-app-text font-sans flex flex-col relative selection:bg-app-accent selection:text-black overflow-x-hidden`}>
-            
-            {/* Background 3D */}
-            <div className={`fixed inset-0 z-0 transition-opacity duration-1000 ${previewUrl ? 'opacity-40' : 'opacity-100'}`}>
-                 <Background3D />
-            </div>
-            
-            {showIntro ? (
-                <IntroAnimation onFinish={() => setShowIntro(false)} />
-            ) : !isAuthenticated ? (
-                <LoginScreen />
-            ) : (
-                <>
-                    <header className="sticky top-0 z-30 bg-transparent backdrop-blur-sm border-b border-white/5 transition-all duration-300 pointer-events-none">
-                        <div className="container mx-auto px-6 py-4 flex items-center justify-between pointer-events-auto">
-                            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.location.reload()}>
-                                <div className="bg-white/5 p-2 rounded-lg border border-white/10 group-hover:border-app-accent/50 transition-colors backdrop-blur-md">
-                                    <SparkleIcon className="w-5 h-5 text-app-text" />
-                                </div>
-                                <h1 className="text-xl font-light tracking-widest hidden sm:block text-app-text">
-                                    AGRO<span className="font-bold">CONECTA</span>
-                                </h1>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <div className="hidden sm:flex items-center">
-                                    {userProfile.isSubscribed ? (
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.3)] uppercase tracking-wide">
-                                            <SparkleIcon className="w-3 h-3 mr-1.5" />
-                                            Premium
-                                        </span>
-                                    ) : (
-                                        <div className="bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
-                                            <span className="text-[10px] font-mono text-zinc-400 uppercase">Créditos</span>
-                                            <span className="font-mono text-white text-xs">{promptsRemaining < 0 ? 0 : promptsRemaining}</span>
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                <div className="flex items-center gap-2">
-                                    {[
-                                        { icon: CowIcon, action: () => setIsPastoConectaOpen(true), title: "Mercado" },
-                                        { icon: UserIcon, action: () => setIsProfileOpen(true), title: "Perfil" },
-                                        { icon: SettingsIcon, action: () => setIsSettingsOpen(true), title: "Configurações" }
-                                    ].map((btn, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={btn.action}
-                                            className="relative p-2.5 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/30 text-zinc-400 hover:text-white transition-all duration-300"
-                                            title={btn.title}
-                                        >
-                                            <btn.icon className="w-5 h-5" />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main className="container mx-auto p-4 md:p-8 flex flex-col items-center flex-grow w-full max-w-5xl z-10 relative pointer-events-none">
-                        {!previewUrl && (
-                            canAnalyze ? (
-                                <div className="w-full flex flex-col items-center py-10">
-                                    <div className="mb-10 pointer-events-auto animate-fade-in-up">
-                                        <div className="relative bg-white/5 backdrop-blur-lg border border-white/10 px-8 py-3 rounded-full flex items-center gap-4 shadow-2xl overflow-hidden group hover:border-white/20 transition-all duration-500">
-                                            <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
-                                            <span className="relative flex h-2 w-2">
-                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
-                                            </span>
-                                            <span className="text-xs font-mono text-white/90 uppercase tracking-[0.2em] relative z-10">
-                                                Sistema Pronto
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <ImageSelector 
-                                        onImageSelect={handleImageSelect} 
-                                        disabled={loading} 
-                                        onOpenTutorial={() => setIsTutorialOpen(true)}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="w-full py-16">
-                                    <SubscriptionPrompt onSubscribe={handleOpenCheckout} />
-                                </div>
-                            )
-                        )}
-
-                        {error && !loading && (
-                            <div className="mt-6 bg-red-950/30 border border-red-500/30 text-red-200 px-6 py-4 rounded-2xl relative w-full max-w-lg text-center animate-fade-in backdrop-blur-xl pointer-events-auto font-light text-sm tracking-wide shadow-lg" role="alert">
-                                {error}
-                                <div className="mt-4">
-                                    <button onClick={handleClear} className="underline text-xs uppercase tracking-wider">Tentar Novamente</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {previewUrl && (
-                            <div className="w-full max-w-4xl mt-8 animate-fade-in-up pointer-events-auto">
-                                {!analysisResult && !loading && !error && (
-                                    /* Estado Intermediário Raro (se algo parar o loading mas manter a img) */
-                                    <div className="text-center mb-4 text-white">Pronto para analisar</div>
-                                )}
-                                
-                                {loading ? (
-                                    <div className="flex flex-col items-center">
-                                        <div className="relative w-64 h-64 rounded-2xl overflow-hidden border border-white/20 shadow-2xl mb-8">
-                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover opacity-50" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                 <LoadingSpinner />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Se tiver resultado ou erro, mostra a imagem menor ou o resultado */
-                                    !analysisResult && !error && (
-                                        <div className="hidden"></div>
-                                    )
-                                )}
-                            </div>
-                        )}
-                        
-                        {analysisResult && (
-                             <div className="w-full flex flex-col items-center">
-                                 {/* Imagem pequena acima do resultado */}
-                                 <div className="w-32 h-32 rounded-xl overflow-hidden border border-white/20 mb-6 relative group pointer-events-auto cursor-pointer" onClick={handleClear} title="Nova Análise">
-                                     <img src={previewUrl!} alt="Analyzed" className="w-full h-full object-cover" />
-                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                         <span className="text-[10px] text-white font-bold uppercase">Nova Foto</span>
-                                     </div>
-                                 </div>
-                                 <AnalysisDisplay result={analysisResult} />
-                                 <div className="mt-10 pb-10 pointer-events-auto">
-                                     <button
-                                         onClick={handleClear}
-                                         className="rounded-xl bg-transparent border border-white/20 px-8 py-4 text-zinc-400 font-medium text-xs uppercase tracking-widest transition-all hover:bg-white/5 hover:text-white hover:border-white/40"
-                                     >
-                                         Nova Análise
-                                     </button>
-                                 </div>
-                             </div>
-                        )}
-
-                    </main>
-                    <Footer />
-
-                    <CheckoutModal 
-                        isOpen={isCheckoutOpen} 
-                        onClose={() => setIsCheckoutOpen(false)} 
-                        onSuccess={handlePaymentSuccess} 
-                    />
-
-                    <UserProfile 
-                        isOpen={isProfileOpen}
-                        onClose={() => setIsProfileOpen(false)}
-                        profile={userProfile}
-                        onUpdateProfile={handleUpdateProfile}
-                    />
-
-                    <PastoConecta
-                        isOpen={isPastoConectaOpen}
-                        onClose={() => setIsPastoConectaOpen(false)}
-                    />
-                    
-                    <TutorialModal
-                        isOpen={isTutorialOpen}
-                        onClose={() => setIsTutorialOpen(false)}
-                    />
-
-                    <SettingsModal
-                        isOpen={isSettingsOpen}
-                        onClose={() => setIsSettingsOpen(false)}
-                    />
-                </>
-            )}
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a3d16]/80 backdrop-blur-md border-b border-[#132c10]/50">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+             <Leaf className="w-8 h-8 text-[#e7ecd9]" />
+             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">AGRO<span className="font-bold">CONECTA</span></span>
+          </div>
+          <div className="hidden md:flex space-x-8 text-sm font-medium text-[#e7ecd9]">
+             <a href="#solucoes" className="hover:text-white transition-colors">Serviços</a>
+             <a href="#importancia" className="hover:text-white transition-colors">A Importância</a>
+             <a href="#processo" className="hover:text-white transition-colors">Nosso Processo</a>
+          </div>
+          <a href="#contato" className="hidden md:inline-flex bg-[#e7ecd9] hover:bg-white text-[#1a3d16] px-6 py-2.5 rounded-full text-sm font-medium transition-colors">
+            Falar com um Especialista
+          </a>
         </div>
-    );
+      </nav>
+
+      <main>
+        {/* Hero Section */}
+        <section className="pt-32 pb-20 md:pt-48 md:pb-32 px-6 relative overflow-hidden bg-[#1a3d16]">
+          <div className="absolute inset-0 z-0">
+             <img src="https://images.unsplash.com/photo-1595840656208-8e6ea47dcfca?q=80&w=2000&auto=format&fit=crop" alt="Campo de agricultura" referrerPolicy="no-referrer" className="w-full h-full object-cover opacity-10" />
+             <div className="absolute inset-0 bg-gradient-to-b from-[#1a3d16]/80 to-[#1a3d16]"></div>
+          </div>
+          
+          <Suspense fallback={null}>
+            <Background3D />
+          </Suspense>
+
+          <div className="max-w-4xl mx-auto text-center relative z-10">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <span className="inline-flex py-1.5 px-4 rounded-full bg-[#1a3d16] text-[#e7ecd9] text-xs font-bold tracking-widest uppercase mb-6 shadow-sm border border-[#486b44]">
+                Especialistas em Solo
+              </span>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#e7ecd9] mb-4 leading-[1.1]">
+                ASSESSORIA EM <br className="hidden md:block"/>FERTILIDADE DO SOLO
+              </h1>
+              <p className="text-xl md:text-2xl font-light text-[#c5d1ae] mb-10 max-w-2xl mx-auto leading-relaxed uppercase tracking-wider">
+                Coleta, Calagem e Adubação
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="https://wa.me/5569999357831" target="_blank" rel="noreferrer" className="w-full sm:w-auto inline-flex justify-center items-center h-14 px-8 rounded-full bg-[#e7ecd9] text-[#1a3d16] font-bold hover:bg-white transition-all shadow-lg shadow-black/20">
+                  Agendar Coleta
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </a>
+                <a href="#solucoes" className="w-full sm:w-auto inline-flex justify-center items-center h-14 px-8 rounded-full bg-transparent text-[#e7ecd9] border border-[#e7ecd9] font-medium hover:bg-[#e7ecd9]/10 transition-all">
+                  Nossos Serviços
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Serviços */}
+        <section id="solucoes" className="py-24 bg-[#e7ecd9] px-6">
+          <div className="max-w-7xl mx-auto">
+             <div className="text-center mb-16">
+               <h2 className="text-3xl md:text-4xl font-bold text-[#1a3d16] mb-4">Nossas Especialidades</h2>
+               <p className="text-[#3b5937] max-w-2xl mx-auto text-lg">Do campo ao laudo, cuidamos de cada etapa tecnológica do seu solo para garantir que sua lavoura atinja o potencial máximo.</p>
+             </div>
+             
+             <div className="grid md:grid-cols-3 gap-8">
+               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} className="p-8 rounded-3xl bg-white/70 backdrop-blur-md shadow-xl shadow-[#1a3d16]/5 border border-white/50 hover:bg-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group">
+                 <div className="w-14 h-14 rounded-2xl bg-[#e7ecd9] flex items-center justify-center mb-6 group-hover:bg-[#1a3d16] transition-all duration-300">
+                   <FileSearch className="w-7 h-7 text-[#1a3d16] group-hover:text-[#e7ecd9]" />
+                 </div>
+                 <h3 className="text-xl font-bold text-[#1a3d16] mb-3">Amostragem Técnica</h3>
+                 <p className="text-[#3b5937] leading-relaxed">
+                   Coleta georreferenciada e estratificada. Utilizamos metodologias rigorosas para garantir que a amostra represente fielmente a realidade da sua área, base essencial para o sucesso.
+                 </p>
+               </motion.div>
+
+               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} className="p-8 rounded-3xl bg-white/70 backdrop-blur-md shadow-xl shadow-[#1a3d16]/5 border border-white/50 hover:bg-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group">
+                 <div className="w-14 h-14 rounded-2xl bg-[#e7ecd9] flex items-center justify-center mb-6 group-hover:bg-[#1a3d16] transition-all duration-300">
+                   <Tractor className="w-7 h-7 text-[#1a3d16] group-hover:text-[#e7ecd9]" />
+                 </div>
+                 <h3 className="text-xl font-bold text-[#1a3d16] mb-3">Recomendação de Calagem</h3>
+                 <p className="text-[#3b5937] leading-relaxed">
+                   Correção inteligente da acidez do solo. Cálculo preciso da necessidade de calcário e gesso agrícola, neutralizando alumínio tóxico e melhorando totalmente o ambiente radicular.
+                 </p>
+               </motion.div>
+
+               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="p-8 rounded-3xl bg-white/70 backdrop-blur-md shadow-xl shadow-[#1a3d16]/5 border border-white/50 hover:bg-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group">
+                 <div className="w-14 h-14 rounded-2xl bg-[#e7ecd9] flex items-center justify-center mb-6 group-hover:bg-[#1a3d16] transition-all duration-300">
+                   <Sprout className="w-7 h-7 text-[#1a3d16] group-hover:text-[#e7ecd9]" />
+                 </div>
+                 <h3 className="text-xl font-bold text-[#1a3d16] mb-3">Adubação Específica</h3>
+                 <p className="text-[#3b5937] leading-relaxed">
+                   Prescrição de NPK e micronutrientes baseada na expectativa de produtividade da sua cultura e histórico da área, evitando desperdícios e maximizando diretamente o seu lucro.
+                 </p>
+               </motion.div>
+             </div>
+          </div>
+        </section>
+
+        {/* Por que fazer analise? */}
+        <section id="importancia" className="py-24 bg-[#1a3d16] text-[#e7ecd9] px-6 overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-32 opacity-10 pointer-events-none">
+             <Leaf className="w-96 h-96 transform rotate-45" />
+           </div>
+           <div className="max-w-4xl mx-auto flex flex-col items-center text-center gap-12 relative z-10">
+             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="space-y-8 w-full">
+               <span className="text-[#c5d1ae] font-semibold tracking-wider uppercase text-sm border-b border-[#c5d1ae] pb-1">Porque Analisar?</span>
+               <h2 className="text-3xl md:text-5xl font-extrabold leading-[1.15] text-white">
+                 Adubar sem análise de solo é como atirar no escuro.
+               </h2>
+               <p className="text-lg text-[#c5d1ae] font-light leading-relaxed max-w-3xl mx-auto">
+                 Os fertilizantes representam uma das maiores parcelas do custo de produção. Uma análise criteriosa não é um gasto, é o melhor investimento que você pode fazer para otimizar os recursos da sua propriedade.
+               </p>
+               <ul className="space-y-4 pt-4 text-left max-w-2xl mx-auto">
+                 {[
+                   "Elimina o desperdício de adubos e corretivos caros",
+                   "Corrige o pH liberando nutrientes que estavam travados no solo",
+                   "Aumenta a resistência das plantas contra pragas e seca",
+                   "Traz previsibilidade, segurança e aumenta sua rentabilidade"
+                 ].map((item, i) => (
+                   <motion.li initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.1 + 0.3 }} key={i} className="flex items-start text-[#e7ecd9]">
+                     <CheckCircle2 className="w-6 h-6 text-[#1a3d16] bg-[#c5d1ae] rounded-full p-1 mr-4 shrink-0 mt-0.5" />
+                     <span className="leading-relaxed text-lg">{item}</span>
+                   </motion.li>
+                 ))}
+               </ul>
+             </motion.div>
+           </div>
+        </section>
+
+        {/* Processo */}
+        <section id="processo" className="py-24 bg-white px-6">
+          <div className="max-w-4xl mx-auto text-center mb-20">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#1a3d16] mb-4">Como Funciona Nosso Trabalho</h2>
+            <p className="text-[#3b5937] text-lg">Um método validado de 4 etapas para trazer os melhores resultados para a sua fazenda, com transparência e muito rigor técnico.</p>
+          </div>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+              {[
+                { step: "1", title: "Visita e Diagnóstico", desc: "Vamos até a sua propriedade entender o histórico de plantio e mapear as áreas com alta variação." },
+                { step: "2", title: "Coleta Técnica", desc: "Realizamos a retirada das amostras com equipamento correto, na profundidade adequada ao seu cultivo." },
+                { step: "3", title: "Análise Laboratorial", desc: "Envio rápido para laboratórios credenciados de alta precisão e confiabilidade no mercado." },
+                { step: "4", title: "Entrega e Laudo", desc: "Apresentamos o laudo interpretado junto com todas as recomendações de calagem e adubação." }
+              ].map((item, i) => (
+                <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.15 }} key={i} className="relative group flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#1a3d16] text-[#e7ecd9] flex items-center justify-center text-2xl font-black shadow-sm group-hover:scale-110 transition-transform duration-300 z-10">
+                    {item.step}
+                  </div>
+                  {/* Linha conectora desktop */}
+                  {i < 3 && <div className="hidden lg:block absolute top-8 left-[60%] right-[-40%] h-[2px] bg-[#e7ecd9] -z-0"></div>}
+                  {/* Linha conectora mobile */}
+                  {i % 2 === 0 && <div className="hidden sm:block lg:hidden absolute top-8 left-[60%] right-[-40%] h-[2px] bg-[#e7ecd9] -z-0"></div>}
+
+                  <h4 className="text-xl font-bold text-[#1a3d16] mb-3 mt-6">{item.title}</h4>
+                  <p className="text-[#3b5937] leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Form */}
+        <section id="contato" className="py-24 bg-[#e7ecd9] px-6">
+           <div className="max-w-6xl mx-auto bg-[#1a3d16] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row shadow-[#1a3d16]/30">
+             <div className="flex-1 p-10 md:p-16 flex flex-col justify-center text-[#e7ecd9] bg-[#1a3d16] relative overflow-hidden">
+               <div className="relative z-10">
+                 <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight text-white">Pronto para aumentar a sua produtividade no campo?</h2>
+                 <p className="text-[#c5d1ae] mb-12 text-lg font-light leading-relaxed">
+                   Fale direto com a nossa equipe agronômica e agende a sua primeira consultoria de avaliação técnica.
+                 </p>
+                 
+                 <div className="space-y-8">
+                   <div className="flex items-center group">
+                     <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-5 border border-white/20">
+                        <Phone className="w-5 h-5 text-white" />
+                     </div>
+                     <span className="text-xl font-bold tracking-wide text-white">(69) 9 9935-7831</span>
+                   </div>
+                   <div className="flex items-center group">
+                     <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-5 border border-white/20">
+                        <MapPin className="w-5 h-5 text-white" />
+                     </div>
+                     <span className="text-lg font-medium tracking-wide">
+                        Rua Açaí, 670 — Jardim Jorge Teixeira<br/>
+                        Ariquemes - RO | 76876-520
+                     </span>
+                   </div>
+                 </div>
+               </div>
+             </div>
+             
+             <div className="flex-1 bg-white p-10 md:p-16">
+               <h3 className="text-2xl font-bold text-[#1a3d16] mb-2">Solicite um Orçamento</h3>
+               <p className="text-[#3b5937] mb-8 font-light">Retornaremos o mais rápido possível com uma proposta.</p>
+               <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); window.open('https://wa.me/5569999357831', '_blank'); }}>
+                 <div>
+                   <label className="block text-sm font-semibold text-[#1a3d16] mb-1.5 ml-1">Nome Completo</label>
+                   <input required type="text" className="w-full bg-[#e7ecd9]/50 border border-[#c5d1ae] rounded-2xl px-5 py-4 text-[#1a3d16] focus:outline-none focus:ring-2 focus:ring-[#1a3d16] focus:border-[#1a3d16] transition-all font-medium" placeholder="Ex: José dos Santos" />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-semibold text-[#1a3d16] mb-1.5 ml-1">Tamanho da Área (Hectares) e Localização</label>
+                   <input required type="text" className="w-full bg-[#e7ecd9]/50 border border-[#c5d1ae] rounded-2xl px-5 py-4 text-[#1a3d16] focus:outline-none focus:ring-2 focus:ring-[#1a3d16] focus:border-[#1a3d16] transition-all font-medium" placeholder="Ex: 50ha na Linha 65" />
+                 </div>
+                 <button type="submit" className="w-full bg-[#1a3d16] hover:bg-[#132c10] text-[#e7ecd9] font-bold text-lg h-16 rounded-2xl mt-4 transition-all shadow-lg active:scale-[0.98]">
+                   Falar no WhatsApp
+                 </button>
+               </form>
+             </div>
+           </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-[#1a3d16] py-12 px-6 text-center border-t border-[#132c10]">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
+           <div className="flex items-center space-x-2 mb-6 md:mb-0">
+             <Leaf className="w-6 h-6 text-[#e7ecd9]" />
+             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">AGRO<span className="font-bold">CONECTA</span></span>
+           </div>
+           
+           <p className="text-[#c5d1ae] text-sm font-medium">
+             &copy; {new Date().getFullYear()} AgroConecta. Todos os direitos reservados.
+           </p>
+         </div>
+      </footer>
+    </div>
+  );
 }
