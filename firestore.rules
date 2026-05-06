@@ -1,72 +1,57 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Catch-all to deny everything by default
+    // Global Default Deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // Primitive Helpers
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    function incoming() {
-      return request.resource.data;
-    }
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Users collection
-    function isValidUserProfile(data) {
-      return data.keys().hasOnly(['farmName', 'location', 'crops', 'history', 'isSubscribed', 'promptCount'])
-        && (data.get('farmName', '') is string)
-        && (data.get('location', '') is string)
-        && (data.get('crops', []) is list)
-        && (data.get('history', []) is list)
-        && (data.get('isSubscribed', false) is bool)
-        && (data.get('promptCount', 0) is number);
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() {
+      // In a real app, verify against an 'admins' collection.
+      // For this simple landing page, assuming any authenticated user is an admin
+      // since we only provision email/password for the site owner.
+      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    match /users/{userId} {
-      allow get: if isOwner(userId) && isValidId(userId);
-      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
-      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+    // Validation Helpers
+    function isValidQuote(data) {
+      return data.keys().hasAll(['name', 'whatsapp', 'areaAndLocation', 'createdAt', 'status'])
+        && data.keys().size() == 5
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 20
+        && data.areaAndLocation is string && data.areaAndLocation.size() > 0 && data.areaAndLocation.size() <= 200
+        && data.status in ['pending', 'contacted'];
     }
 
-    // Users History subcollection
-    function isValidHistoryItem(data) {
-      return data.keys().hasOnly(['timestamp', 'result'])
-        && data.timestamp is number
-        && data.result is map;
-    }
-    match /users/{userId}/history/{historyId} {
-      allow read: if isOwner(userId) && isValidId(userId);
-      allow create: if isOwner(userId) && isValidId(userId) && isValidId(historyId) && isValidHistoryItem(incoming());
-    }
-
-    // Marketplace collection
-    function isValidPastureListing(data) {
-      return data.keys().hasAll(['title', 'location', 'area', 'price', 'description', 'contactPhone', 'ownerName', 'createdAt'])
-        && data.title is string && data.title.size() <= 200
-        && data.location is string && data.location.size() <= 200
-        && data.area is number
-        && data.price is number
-        && data.description is string && data.description.size() <= 2000
-        && data.contactPhone is string && data.contactPhone.size() <= 50
-        && data.ownerName is string && data.ownerName.size() <= 100
-        && data.createdAt is number;
-    }
-
-    match /marketplace/{listingId} {
-      allow list, get: if true; // Public read
-      allow create: if isSignedIn() && isValidId(listingId) && isValidPastureListing(incoming());
-      allow update: if isSignedIn() && isValidId(listingId) && isValidPastureListing(incoming());
+    // Quotes Collection
+    match /quotes/{quoteId} {
+      // Admins can read all quotes
+      allow read: if isAdmin();
+      
+      // Anyone can submit a quote request (Create only)
+      allow create: if isValidId(quoteId)
+        && isValidQuote(incoming())
+        && incoming().createdAt == request.time
+        && incoming().status == 'pending';
+        
+      // Only admins can update (e.g., to change status)
+      allow update: if isAdmin()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        && incoming().status in ['pending', 'contacted']
+        && incoming().name == existing().name
+        && incoming().whatsapp == existing().whatsapp
+        && incoming().areaAndLocation == existing().areaAndLocation
+        && incoming().createdAt == existing().createdAt;
+        
+      // Only admins can delete
+      allow delete: if isAdmin();
     }
   }
 }
