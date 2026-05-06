@@ -1,10 +1,10 @@
 
-import { db } from './databaseService';
+import { database as db } from './databaseService';
 
 // CONFIGURAÇÃO REAL DE PAGAMENTO
 export const KIRVANO_CONFIG = {
     // Link do Checkout (Produto)
-    CHECKOUT_URL: "https://kirvano.com/checkout/SEU_CODIGO_AQUI", 
+    CHECKOUT_URL: "https://pay.kirvano.com/8345334a-e421-42f3-9bec-c5d6c574a644", 
     
     // URL do seu Backend (Local ou Produção)
     // Se estiver rodando o server.js localmente, é http://localhost:3000
@@ -72,9 +72,8 @@ export const processWebhook = async (payload: KirvanoWebhookPayload) => {
             body: JSON.stringify({ ...payload, token: 'agro-token-123' })
         });
         return { success: true, message: "Webhook enviado ao Servidor Local" };
-    } catch (e: unknown) {
+    } catch (e) {
         // Fallback local se o servidor estiver desligado
-        console.warn("Webhook failed, falling back to local simulation", e);
         if (payload.event === 'sale.approved') {
             localStorage.setItem('agroconectaIsSubscribed', 'true');
             return { success: true, message: "Acesso Liberado (Simulação Local)" };

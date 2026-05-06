@@ -26,27 +26,27 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                     clearInterval(interval);
                     return 100;
                 }
-                const newProgress = prev + Math.random() * 5;
-                
-                if (newProgress < 30) setStepIndex(0);
-                else if (newProgress < 50) setStepIndex(1);
-                else if (newProgress < 75) setStepIndex(2);
-                else if (newProgress < 95) setStepIndex(3);
-                else setStepIndex(4);
-
-                if (newProgress >= 100) {
-                    setTimeout(() => {
-                        setIsFadingOut(true);
-                        setTimeout(onFinish, 800); 
-                    }, 500);
-                }
-                
-                return newProgress;
+                return prev + Math.random() * 5;
             });
         }, 100);
 
         return () => clearInterval(interval);
-    }, [onFinish]);
+    }, []);
+
+    useEffect(() => {
+        if (progress < 30) setStepIndex(0);
+        else if (progress < 50) setStepIndex(1);
+        else if (progress < 75) setStepIndex(2);
+        else if (progress < 95) setStepIndex(3);
+        else setStepIndex(4);
+
+        if (progress >= 100) {
+            setTimeout(() => {
+                setIsFadingOut(true);
+                setTimeout(onFinish, 800); 
+            }, 500);
+        }
+    }, [progress, onFinish]);
 
     if (progress > 100 && !isFadingOut) return null;
 

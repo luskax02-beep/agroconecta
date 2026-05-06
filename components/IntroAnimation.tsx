@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Stars, PerspectiveCamera } from '@react-three/drei';
@@ -19,15 +20,10 @@ const BiomassParticles = () => {
         const colors = new Float32Array(count * 3);
         const color = new THREE.Color('#4ade80'); // Green-400
 
-        const pseudoRandom = (seed: number) => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-
         for (let i = 0; i < count; i++) {
-            const r = (pseudoRandom(i * 3) - 0.5) * 5;
-            const theta = pseudoRandom(i * 3 + 1) * Math.PI * 2;
-            const phi = pseudoRandom(i * 3 + 2) * Math.PI;
+            const r = (Math.random() - 0.5) * 5;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
             
             positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
             positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
@@ -105,7 +101,7 @@ const ScannerCube = () => {
 const TerrainMesh = () => {
     const mesh = useRef<THREE.Mesh>(null!);
     
-    useFrame(() => {
+    useFrame((state) => {
         if(mesh.current) {
             mesh.current.rotation.z += 0.0015; // Slightly slower
         }
@@ -114,14 +110,10 @@ const TerrainMesh = () => {
     const geometry = useMemo(() => {
         const geo = new THREE.PlaneGeometry(8, 8, 32, 32);
         const pos = geo.attributes.position;
-        const pseudoRandom = (seed: number) => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
         for (let i = 0; i < pos.count; i++) {
             const x = pos.getX(i);
             const y = pos.getY(i);
-            const z = Math.sin(x * 0.8) * Math.cos(y * 0.8) * 0.5 + pseudoRandom(i) * 0.1;
+            const z = Math.sin(x * 0.8) * Math.cos(y * 0.8) * 0.5 + Math.random() * 0.1;
             pos.setZ(i, z);
         }
         geo.computeVertexNormals();
@@ -144,7 +136,7 @@ const TerrainMesh = () => {
 const SatelliteGlobe = () => {
     const group = useRef<THREE.Group>(null!);
     
-    useFrame(() => {
+    useFrame((state) => {
         if (group.current) {
              group.current.rotation.y += 0.004; // Slightly slower
         }

@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "isSubscribed": { "type": "boolean" },
+        "plan": { "type": "string" },
+        "updatedAt": { "type": "number" },
+        "farmName": { "type": "string" },
+        "location": { "type": "string" },
+        "promptCount": { "type": "number" },
+        "crops": { "type": "array" }
+      }
+    },
+    "HistoryItem": {
+      "title": "HistoryItem",
+      "description": "User analysis history",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "number" },
+        "result": { "type": "object" }
+      }
+    },
+    "PastureListing": {
+       "title": "PastureListing",
+       "description": "Marketplace listing",
+       "type": "object",
+       "properties": {
+         "id": { "type": "string" },
+         "title": { "type": "string" },
+         "location": { "type": "string" },
+         "area": { "type": "number" },
+         "price": { "type": "number" },
+         "description": { "type": "string" },
+         "contactPhone": { "type": "string" },
+         "features": { "type": "array" },
+         "ownerName": { "type": "string" },
+         "createdAt": { "type": "number" }
+       }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profiles."
+    },
+    "users/{userId}/history/{historyId}": {
+      "schema": { "$ref": "#/entities/HistoryItem" },
+      "description": "Stores analysis history for a user."
+    },
+    "marketplace/{listingId}": {
+      "schema": { "$ref": "#/entities/PastureListing" },
+      "description": "Stores marketplace listings."
+    }
+  }
+}

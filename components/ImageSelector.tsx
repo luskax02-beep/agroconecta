@@ -60,7 +60,7 @@ const ImageSelector: React.FC<ImageSelectorProps> = ({ onImageSelect, disabled, 
             )}
             
             <div className="w-full max-w-xl mx-auto animate-fade-in-up pointer-events-auto">
-                <div className="bg-app-card/40 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-app-border relative overflow-hidden group hover:border-app-accent/40 transition-all duration-500">
+                <div className="glass-panel glow-hover rounded-3xl p-8 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-b from-app-accent/5 to-transparent pointer-events-none" />
                     
                     <div className="text-center mb-8 relative z-10">

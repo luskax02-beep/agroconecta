@@ -1,84 +1,177 @@
 
 import { UserProfile, AnalysisResult, HistoryItem, PastureListing } from '../types';
+import { db as firestoreDb, auth } from '../firebaseConfig';
+import { doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
-// Simulating a database schema keys
-const DB_KEYS = {
-    PROFILE: 'agroconecta_db_profile',
-    AUTH: 'agroconecta_db_auth',
-    MARKETPLACE: 'agroconecta_db_marketplace',
-    SETTINGS: 'agroconecta_db_settings'
-};
-
-// Default Initial State
 const defaultProfile: UserProfile = {
     farmName: '',
     location: '',
     crops: [],
-    history: []
+    history: [],
+    isSubscribed: false,
+    promptCount: 0
 };
+
+// Listen for auth state to cache profile or set initial state if needed
+let currentUserId: string | null = null;
+onAuthStateChanged(auth, (user) => {
+    currentUserId = user ? user.uid : null;
+});
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export const db = {
     user: {
         isAuthenticated: (): boolean => {
-            return localStorage.getItem(DB_KEYS.AUTH) === 'true';
+            return currentUserId !== null;
         },
-        login: () => {
-            localStorage.setItem(DB_KEYS.AUTH, 'true');
+        login: async () => {
+             const provider = new GoogleAuthProvider();
+             provider.setCustomParameters({
+                 prompt: 'select_account'
+             });
+             try {
+                const { signInWithPopup } = await import('firebase/auth');
+                await signInWithPopup(auth, provider);
+             } catch (error: any) {
+                console.error("Login failed:", error);
+                throw error;
+             }
         },
-        logout: () => {
-            localStorage.removeItem(DB_KEYS.AUTH);
+        loginWithEmail: async (email: string, password: string) => {
+             try {
+                 const { signInWithEmailAndPassword } = await import('firebase/auth');
+                 await signInWithEmailAndPassword(auth, email, password);
+             } catch (error: any) {
+                 console.error("Email login failed", error);
+                 throw error;
+             }
         },
-        getProfile: (): UserProfile => {
+        registerWithEmail: async (email: string, password: string) => {
+             try {
+                 const { createUserWithEmailAndPassword } = await import('firebase/auth');
+                 await createUserWithEmailAndPassword(auth, email, password);
+             } catch (error: any) {
+                 console.error("Email register failed", error);
+                 throw error;
+             }
+        },
+        logout: async () => {
+             try {
+                 await signOut(auth);
+             } catch (error) {
+                 console.error("Logout failed", error);
+             }
+        },
+        getProfile: async (): Promise<UserProfile> => {
+            if (!currentUserId) return defaultProfile;
+            const path = `users/${currentUserId}`;
             try {
-                const data = localStorage.getItem(DB_KEYS.PROFILE);
-                return data ? JSON.parse(data) : defaultProfile;
-            } catch {
+                const userDoc = await getDoc(doc(firestoreDb, 'users', currentUserId));
+                if (userDoc.exists()) {
+                    return userDoc.data() as UserProfile;
+                } else {
+                    return defaultProfile;
+                }
+            } catch (error) {
+                handleFirestoreError(error, OperationType.GET, path);
                 return defaultProfile;
             }
         },
-        updateProfile: (profile: UserProfile) => {
-            localStorage.setItem(DB_KEYS.PROFILE, JSON.stringify(profile));
+        updateProfile: async (profile: UserProfile): Promise<void> => {
+            if (!currentUserId) return;
+            const path = `users/${currentUserId}`;
+            try {
+                await setDoc(doc(firestoreDb, 'users', currentUserId), profile, { merge: true });
+            } catch (error) {
+                handleFirestoreError(error, OperationType.WRITE, path);
+            }
         },
-        addHistoryItem: (result: AnalysisResult) => {
-            const profile = db.user.getProfile();
-            const newItem: HistoryItem = {
-                id: Date.now().toString(),
-                timestamp: Date.now(),
-                result: result
-            };
-            profile.history.unshift(newItem); // Add to beginning
-            db.user.updateProfile(profile);
+        addHistoryItem: async (result: AnalysisResult): Promise<void> => {
+            if (!currentUserId) return;
+            const path = `users/${currentUserId}/history`;
+            try {
+                const newItem = {
+                    timestamp: Date.now(),
+                    result: result
+                };
+                await addDoc(collection(firestoreDb, 'users', currentUserId, 'history'), newItem);
+            } catch (error) {
+                handleFirestoreError(error, OperationType.CREATE, path);
+            }
         }
     },
     marketplace: {
-        getListings: (): PastureListing[] => {
+        getListings: async (): Promise<PastureListing[]> => {
+            const path = 'marketplace';
             try {
-                const data = localStorage.getItem(DB_KEYS.MARKETPLACE);
-                if (data) return JSON.parse(data);
-                
-                // Seed data if empty
-                const seed: PastureListing[] = [{
-                    id: '1',
-                    title: 'Pasto Alta Mogiana - Premium',
-                    location: 'Franca, SP',
-                    area: 45,
-                    price: 2500,
-                    description: 'Pasto de braquiária bem formado, irrigado, com água natural.',
-                    contactPhone: '(16) 99999-9999',
-                    features: ['Curral', 'Água Natural', 'Internet'],
-                    ownerName: 'Roberto Almeida',
-                    createdAt: Date.now()
-                }];
-                localStorage.setItem(DB_KEYS.MARKETPLACE, JSON.stringify(seed));
-                return seed;
-            } catch {
+                const snapshot = await getDocs(collection(firestoreDb, 'marketplace'));
+                const listings: PastureListing[] = [];
+                snapshot.forEach((doc) => {
+                    listings.push({ id: doc.id, ...doc.data() } as PastureListing);
+                });
+                return listings;
+            } catch (error) {
+                handleFirestoreError(error, OperationType.LIST, path);
                 return [];
             }
         },
-        addListing: (listing: PastureListing) => {
-            const current = db.marketplace.getListings();
-            const updated = [listing, ...current];
-            localStorage.setItem(DB_KEYS.MARKETPLACE, JSON.stringify(updated));
+        addListing: async (listing: Omit<PastureListing, 'id'>): Promise<void> => {
+            const path = 'marketplace';
+            try {
+                await addDoc(collection(firestoreDb, 'marketplace'), { ...listing, createdAt: Date.now() });
+            } catch (error) {
+                handleFirestoreError(error, OperationType.CREATE, path);
+            }
         }
     }
 };
+
+export const database = db;
+
