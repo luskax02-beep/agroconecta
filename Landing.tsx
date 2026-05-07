@@ -18,7 +18,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-2">
              <Leaf className="w-8 h-8 text-[#e7ecd9]" />
-             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">AGRO<span className="font-bold">CONECTA</span></span>
+             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">Experimentação <span className="font-bold">(Statsig)</span></span>
           </div>
           <div className="hidden md:flex space-x-8 text-sm font-medium text-[#e7ecd9]">
              <a href="#solucoes" className="hover:text-white transition-colors">Serviços</a>
@@ -208,11 +208,11 @@ export default function Landing() {
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
            <div className="flex items-center space-x-2 mb-6 md:mb-0">
              <Leaf className="w-6 h-6 text-[#e7ecd9]" />
-             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">AGRO<span className="font-bold">CONECTA</span></span>
+             <span className="text-xl font-light tracking-tight text-[#e7ecd9]">Experimentação <span className="font-bold">(Statsig)</span></span>
            </div>
            
            <p className="text-[#c5d1ae] text-sm font-medium">
-             &copy; {new Date().getFullYear()} AgroConecta. Todos os direitos reservados.
+             &copy; {new Date().getFullYear()} Experimentação (Statsig). Todos os direitos reservados.
            </p>
          </div>
       </footer>
