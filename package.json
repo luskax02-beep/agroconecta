@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "start": "node dist/server.cjs",
-    "build": "vite build && npx esbuild server.ts --bundle --platform=node --target=node22 --outfile=dist/server.cjs --packages=external",
+    "dev": "vite",
+    "start": "vite preview",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
