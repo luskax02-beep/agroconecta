@@ -24,6 +24,7 @@
     "react-dom": "18.2.0",
     "react-router": "^7.15.0",
     "react-router-dom": "^7.15.0",
+    "statsig-react": "^2.1.0",
     "tailwind-merge": "^3.5.0",
     "three": "0.160.0",
     "vite": "^7.2.4"
