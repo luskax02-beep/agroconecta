@@ -1,6 +1,11 @@
-import { ThreeElements } from "@react-three/fiber";
+import { ThreeElements } from '@react-three/fiber';
 
-declare global {
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements extends ThreeElements {}
+  }
+}
+declare module 'react/jsx-runtime' {
   namespace JSX {
     interface IntrinsicElements extends ThreeElements {}
   }

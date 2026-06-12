@@ -1,7 +1,6 @@
 {
-  "name": "Experimentação (Statsig)",
-  "description": "An application to help farmers identify crop pests and diseases by analyzing images. It provides treatment suggestions and locates nearby agricultural supply stores.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "name": "Cardápio Festa Junina 3B",
+  "description": "Aplicativo de pedidos para a festa junina do 3B Agropecuária para evitar filas. Selecione seus produtos e gere um código de pedido.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
