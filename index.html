@@ -1,58 +1,21 @@
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Cardápio Festa Junina 3B</title>
+    <title>3B Agropecuária | Cardápio Junino</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              mono: ['Space Grotesk', 'monospace'],
-            },
-            colors: {
-              app: {
-                bg: 'var(--app-bg)',
-                card: 'var(--app-card)',
-                text: 'var(--app-text)',
-                muted: 'var(--app-text-muted)',
-                border: 'var(--app-border)',
-                accent: 'var(--app-accent)',
-              }
-            },
-            boxShadow: {
-              'glow': '0 0 20px rgba(255, 255, 255, 0.15)',
-              'glow-sm': '0 0 10px rgba(255, 255, 255, 0.1)',
-              'glow-lg': '0 0 30px rgba(255, 255, 255, 0.2)',
-            },
-            keyframes: {
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              pulseSlow: {
-                 '0%, 100%': { opacity: '1' },
-                 '50%': { opacity: '0.5' },
-              }
-            },
-            animation: {
-              'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
-              'fade-in': 'fadeIn 0.6s ease-out forwards',
-              'spin-slow': 'spin 8s linear infinite',
-              'pulse-slow': 'pulseSlow 4s ease-in-out infinite',
             }
           }
         }
@@ -60,21 +23,9 @@
     </script>
     <style>
       body {
-        background-color: #e8e4d3;
-      }
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #3e4f32;
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #2b3821;
+        background-color: #EDE9DE;
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
       }
     </style>
   <script type="importmap">
@@ -98,7 +49,7 @@
 </script>
 
 </head>
-  <body class="antialiased dark">
+  <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
