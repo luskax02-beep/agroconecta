@@ -4,22 +4,13 @@ import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'f
 import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { Lock, LogOut, CheckCircle2, Clock } from 'lucide-react';
 
-interface Quote {
-  id: string;
-  name: string;
-  whatsapp: string;
-  areaAndLocation: string;
-  status: 'pending' | 'contacted';
-  createdAt: any;
-}
-
 export default function Admin() {
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -32,17 +23,14 @@ export default function Admin() {
   useEffect(() => {
     if (!user) return;
     
-    // Assumes user verified email (our isAdmin rule checks email_verified == true)
-    // If testing locally, they might not be verified, but the rule requires it.
-    // For now we'll try to fetch.
-    const q = query(collection(db, 'quotes'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const qs: Quote[] = [];
+      const os: any[] = [];
       snapshot.forEach(doc => {
-        qs.push({ id: doc.id, ...doc.data() } as Quote);
+        os.push({ id: doc.id, ...doc.data() });
       });
-      setQuotes(qs);
+      setOrders(os);
     }, (err) => {
       console.error(err);
       if (err.message.includes('permission-denied')) {
@@ -67,11 +55,11 @@ export default function Admin() {
     await signOut(auth);
   };
 
-  const toggleStatus = async (quote: Quote) => {
+  const toggleStatus = async (order: any) => {
     try {
-      const newStatus = quote.status === 'pending' ? 'contacted' : 'pending';
-      const quoteRef = doc(db, 'quotes', quote.id);
-      await updateDoc(quoteRef, { status: newStatus });
+      const newStatus = order.status === 'pending' ? 'completed' : 'pending';
+      const orderRef = doc(db, 'orders', order.id);
+      await updateDoc(orderRef, { status: newStatus });
     } catch (err) {
       console.error('Update error', err);
     }
@@ -140,11 +128,11 @@ export default function Admin() {
       <main className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-[#1a3d16]">Orçamentos Solicitados</h2>
-            <p className="text-[#3b5937]">Gerencie os leads que chegaram via site.</p>
+            <h2 className="text-2xl font-bold text-[#1a3d16]">Pedidos Recebidos</h2>
+            <p className="text-[#3b5937]">Gerencie os pedidos do arraiá.</p>
           </div>
           <div className="bg-white px-4 py-2 rounded-lg text-sm font-bold text-[#1a3d16] shadow-sm">
-            Total: {quotes.length}
+            Total: {orders.length}
           </div>
         </div>
 
@@ -158,40 +146,50 @@ export default function Admin() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#1a3d16] text-[#e7ecd9] text-sm">
-                <th className="p-4 font-semibold w-1/4">Nome</th>
-                <th className="p-4 font-semibold w-1/4">Área e Localização</th>
-                <th className="p-4 font-semibold w-1/6">WhatsApp</th>
+                <th className="p-4 font-semibold w-1/3">Itens</th>
+                <th className="p-4 font-semibold w-1/6">Total</th>
                 <th className="p-4 font-semibold w-1/6">Status</th>
                 <th className="p-4 font-semibold text-right">Data</th>
               </tr>
             </thead>
             <tbody className="text-sm">
-              {quotes.map(quote => (
-                <tr key={quote.id} className="border-b border-[#c5d1ae]/30 hover:bg-[#e7ecd9]/20 transition-colors">
-                  <td className="p-4 font-bold text-[#1a3d16]">{quote.name}</td>
-                  <td className="p-4 text-[#3b5937]">{quote.areaAndLocation}</td>
-                  <td className="p-4 text-[#1a3d16]">{quote.whatsapp}</td>
+              {orders.map(order => {
+                let parsedItems = [];
+                try {
+                  parsedItems = JSON.parse(order.items);
+                } catch(e) {}
+                
+                return (
+                <tr key={order.id} className="border-b border-[#c5d1ae]/30 hover:bg-[#e7ecd9]/20 transition-colors">
+                  <td className="p-4 text-[#3b5937]">
+                    <ul className="list-disc ml-4">
+                      {parsedItems.map((item: any, idx: number) => (
+                        <li key={idx}><span className="font-bold">{item.quantity}x</span> {item.name}</li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td className="p-4 font-bold text-[#1a3d16]">R$ {order.total.toFixed(2).replace('.', ',')}</td>
                   <td className="p-4">
                     <button 
-                      onClick={() => toggleStatus(quote)}
+                      onClick={() => toggleStatus(order)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                        quote.status === 'contacted' 
+                        order.status === 'completed' 
                           ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                           : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                       }`}
                     >
-                      {quote.status === 'contacted' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                      {quote.status === 'contacted' ? 'Contatado' : 'Pendente'}
+                      {order.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                      {order.status === 'completed' ? 'Finalizado' : 'Pendente'}
                     </button>
                   </td>
                   <td className="p-4 text-right text-[#3b5937]">
-                    {quote.createdAt ? new Date(quote.createdAt.toDate()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '...'}
+                    {order.createdAt ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '...'}
                   </td>
                 </tr>
-              ))}
-              {quotes.length === 0 && (
+              )})}
+              {orders.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[#3b5937]">Nenhum orçamento solicitado ainda.</td>
+                  <td colSpan={4} className="p-8 text-center text-[#3b5937]">Nenhum pedido recebido ainda.</td>
                 </tr>
               )}
             </tbody>
