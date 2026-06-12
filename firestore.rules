@@ -21,33 +21,31 @@ service cloud.firestore {
     }
 
     // Validation Helpers
-    function isValidQuote(data) {
-      return data.keys().hasAll(['name', 'whatsapp', 'areaAndLocation', 'createdAt', 'status'])
-        && data.keys().size() == 5
-        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
-        && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 20
-        && data.areaAndLocation is string && data.areaAndLocation.size() > 0 && data.areaAndLocation.size() <= 200
-        && data.status in ['pending', 'contacted'];
+    function isValidOrder(data) {
+      return data.keys().hasAll(['items', 'total', 'createdAt', 'status'])
+        && data.keys().size() == 4
+        && data.items is string && data.items.size() > 0 && data.items.size() <= 4096 /* Serialized JSON carts are fine up to 4KB */
+        && data.total is number && data.total >= 0
+        && data.status in ['pending', 'completed'];
     }
 
-    // Quotes Collection
-    match /quotes/{quoteId} {
-      // Admins can read all quotes
+    // Orders Collection
+    match /orders/{orderId} {
+      // Admins can read all orders
       allow read: if isAdmin();
       
-      // Anyone can submit a quote request (Create only)
-      allow create: if isValidId(quoteId)
-        && isValidQuote(incoming())
+      // Anyone can submit an order request (Create only)
+      allow create: if isValidId(orderId)
+        && isValidOrder(incoming())
         && incoming().createdAt == request.time
         && incoming().status == 'pending';
         
       // Only admins can update (e.g., to change status)
       allow update: if isAdmin()
         && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
-        && incoming().status in ['pending', 'contacted']
-        && incoming().name == existing().name
-        && incoming().whatsapp == existing().whatsapp
-        && incoming().areaAndLocation == existing().areaAndLocation
+        && incoming().status in ['pending', 'completed']
+        && incoming().items == existing().items
+        && incoming().total == existing().total
         && incoming().createdAt == existing().createdAt;
         
       // Only admins can delete

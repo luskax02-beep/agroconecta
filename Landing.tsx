@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Plus, Minus, Trash2, Send, Tent, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebaseConfig';
 
 // Replace with actual WhatsApp number
 const WHATSAPP_NUMBER = "5569993899057"; 
@@ -92,8 +94,28 @@ export default function Landing() {
   const totalCart = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  const sendToWhatsApp = () => {
+  const sendToWhatsApp = async () => {
     if (cart.length === 0) return;
+
+    try {
+      // Create serialized items for saving
+      const itemsString = JSON.stringify(cart.map(c => ({
+        id: c.id,
+        name: c.name,
+        quantity: c.quantity,
+        price: c.price
+      })));
+
+      await addDoc(collection(db, 'orders'), {
+        items: itemsString,
+        total: totalCart,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Erro ao salvar o pedido no banco", error);
+      // Even if saving to DB fails, still let user send via WhatsApp.
+    }
 
     let text = `🔥🌽 *FESTA JUNINA 3B AGROPECUÁRIA* 🌽🔥\n\nOlá, sô! Gostaria de fazer o seguinte pedido pro cardápio junino:\n\n`;
     
