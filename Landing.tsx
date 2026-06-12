@@ -160,7 +160,7 @@ export default function Landing() {
                <Tent className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold uppercase tracking-widest leading-tight">3B Agropecuária</h1>
+              <h1 className="text-2xl md:text-3xl font-normal uppercase tracking-widest leading-tight font-['Bebas_Neue']">3B Agropecuária</h1>
               <p className="text-sm font-medium tracking-wider text-[#A5B396]">Arraiá & Cardápio</p>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function Landing() {
          <div className="max-w-3xl mx-auto relative z-10 text-center">
             <div className="inline-flex items-center justify-center space-x-3 mb-2">
               <Flame className="w-6 h-6 text-[#d97706]" />
-              <h2 className="text-3xl md:text-5xl font-black text-[#2C3825] tracking-tighter uppercase font-serif transform -rotate-2">
+              <h2 className="text-5xl md:text-7xl font-normal text-[#2C3825] tracking-wide uppercase font-['Bebas_Neue']">
                 Cardápio Junino
               </h2>
               <Flame className="w-6 h-6 text-[#d97706]" />
@@ -205,9 +205,9 @@ export default function Landing() {
         {MENU_DATA.map((section) => (
           <section key={section.id} className="relative">
             <div className="mb-6 text-center">
-              <h3 className="text-3xl font-black uppercase tracking-tight text-[#2C3825] inline-block relative">
+              <h3 className="text-4xl font-normal uppercase tracking-wide text-[#2C3825] inline-block relative font-['Bebas_Neue']">
                 {section.title}
-                <div className="absolute -bottom-2 left-0 w-full h-1 bg-[#2C3825] opacity-20 rounded"></div>
+                <div className="absolute -bottom-1 left-0 w-full h-1 bg-[#2C3825] opacity-20 rounded"></div>
               </h3>
               {section.subtitle && (
                 <p className="text-sm font-semibold tracking-widest uppercase text-[#2C3825]/60 mt-2">
@@ -223,7 +223,7 @@ export default function Landing() {
                 return (
                   <div key={item.id} className="bg-white rounded-2xl p-5 shadow-sm border border-[#2C3825]/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-md">
                     <div>
-                      <h4 className="text-lg font-bold uppercase text-[#2C3825]">{item.name}</h4>
+                      <h4 className="text-xl font-normal uppercase text-[#2C3825] font-['Bebas_Neue'] tracking-wide">{item.name}</h4>
                       {item.description && (
                         <p className="text-sm text-[#2C3825]/70 mt-1">{item.description}</p>
                       )}
